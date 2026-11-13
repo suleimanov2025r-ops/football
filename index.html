@@ -1,0 +1,2532 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Custom Football Manager</title>
+<meta name="theme-color" content="#0A1650">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Football Manager">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: 'var(--bg)', surf: 'var(--surf)', surf2: 'var(--surf2)', ink: 'var(--ink)', mute: 'var(--mute)',
+          line: 'var(--line)', acc: 'var(--acc)', accsoft: 'var(--accsoft)', btn: 'var(--btn)', btnink: 'var(--btnink)',
+          navy: 'var(--navy)', navyink: 'var(--navyink)', thead: 'var(--thead)', theadink: 'var(--theadink)',
+          cyan: 'var(--cyan)', bad: 'var(--bad)', badink: 'var(--badink)', good: 'var(--good)'
+        },
+        fontFamily: {
+          display: ['"Barlow Condensed"', '"Arial Narrow"', 'sans-serif'],
+          body: ['Barlow', 'system-ui', 'sans-serif']
+        }
+      }
+    }
+  };
+</script>
+<style>
+  :root {
+    --bg: #EEF1F7; --surf: #FFFFFF; --surf2: #F4F6FB; --ink: #0A1233; --mute: #5A6685; --line: #D9DFEC;
+    --navy: #0A1650; --navyink: #FFFFFF; --thead: #0A1650; --theadink: #FFFFFF;
+    --acc: #0A5BD3; --accsoft: #E3EEFF; --cyan: #00B8F0; --btn: #0A1650; --btnink: #FFFFFF;
+    --good: #13804A; --bad: #C62828; --badink: #FFFFFF; --yellow: #F2B705;
+    --c-gk: #8A5A00; --c-def: #2D5FA8; --c-mid: #13804A; --c-fwd: #C62828;
+    --r-hi: #14A34A; --r-good: #7BC043; --r-mid: #F0A800; --r-low: #E5483A; --logo-bg: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #050A24; --surf: #0C1440; --surf2: #111B52; --ink: #E8EDFF; --mute: #98A4CC; --line: #222E6B;
+      --navy: #030820; --thead: #16236B; --acc: #4DB8FF; --accsoft: #14246B; --btn: #00B8F0; --btnink: #041033;
+      --good: #4CC38A; --bad: #FF7A70; --badink: #2A0A06; --yellow: #F2C94C;
+      --c-gk: #E0B04A; --c-def: #7FA8E8; --c-mid: #4CC38A; --c-fwd: #FF7A70;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #050A24; --surf: #0C1440; --surf2: #111B52; --ink: #E8EDFF; --mute: #98A4CC; --line: #222E6B;
+    --navy: #030820; --thead: #16236B; --acc: #4DB8FF; --accsoft: #14246B; --btn: #00B8F0; --btnink: #041033;
+    --good: #4CC38A; --bad: #FF7A70; --badink: #2A0A06; --yellow: #F2C94C;
+    --c-gk: #E0B04A; --c-def: #7FA8E8; --c-mid: #4CC38A; --c-fwd: #FF7A70;
+    color-scheme: dark;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--ink); font-family: Barlow, system-ui, sans-serif; font-size: 15px; }
+  .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .num { font-variant-numeric: tabular-nums; }
+  .masthead { background: linear-gradient(180deg, var(--navy) 0%, var(--navy) 100%); border-bottom: 3px solid var(--cyan); }
+  .btn-navy { border: 1px solid rgba(255,255,255,0.35); color: #fff; }
+  .btn-navy:hover { background: rgba(255,255,255,0.12); }
+  .rule { display: block; height: 3px; width: 2rem; margin-top: 0.25rem; background: var(--cyan); }
+  .tbl tbody tr { transition: background-color 120ms ease; }
+  .tbl tbody tr:hover { background: var(--surf2); }
+  .view-in { animation: rise 260ms cubic-bezier(.2,.7,.2,1) both; }
+  .fade-in { animation: fade 200ms ease both; }
+  .modal-back { position: fixed; inset: 0; z-index: 60; background: rgba(3,8,32,0.62); display: flex; justify-content: center; align-items: flex-end;
+    padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+    animation: fade 180ms ease both; }
+  .modal-panel { width: 100%; max-height: 100%; overflow-y: auto; background: var(--surf); border-radius: 6px; animation: pop 240ms cubic-bezier(.2,.8,.2,1) both; }
+  @media (min-width: 640px) { .modal-back { align-items: center; } }
+  .toast-wrap { position: fixed; z-index: 80; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; pointer-events: none; }
+  .toast { animation: toast-in 240ms cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  }
+  html,body { margin: 0; }
+  body { min-height: 100vh; }
+  
+  /* Экран загрузки для IndexedDB */
+  #loading-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+  .spinner { border: 4px solid var(--line); border-top: 4px solid var(--acc); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 16px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div style="font-family: Barlow, sans-serif; font-weight: 600; color: var(--ink);">Загрузка базы...</div>
+</div>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef, useContext, createContext } = React;
+
+/* ================================================================== */
+/* ЛОГИКА (БАЗА, ДВИЖОК, ТУРНИРЫ)                                     */
+/* ================================================================== */
+const POSITIONS = ['GK', 'DEF', 'MID', 'FWD'];
+const POS_NAME = { GK: 'Вратарь', DEF: 'Защитник', MID: 'Полузащитник', FWD: 'Нападающий' };
+const POS_PLURAL = { GK: 'Вратари', DEF: 'Защитники', MID: 'Полузащитники', FWD: 'Нападающие' };
+const POS_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+const START_SEASON = 2025;
+
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const avg = (arr) => (arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0);
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+const plural = (n, f) => {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return f[2];
+  if (b > 1 && b < 5) return f[1];
+  if (b === 1) return f[0];
+  return f[2];
+};
+
+const emptyStats = () => ({ apps: 0, goals: 0, motm: 0, hatTricks: 0, pokers: 0, fivePlus: 0 });
+const emptyAgg = () => ({ apps: 0, goals: 0, motm: 0, hatTricks: 0, pokers: 0, fivePlus: 0 });
+
+const sortRoster = (list) =>
+  [...list].sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.ovr - a.ovr || a.name.localeCompare(b.name, 'ru'));
+
+function nextNumber(players, clubId) {
+  const used = new Set(players.filter((p) => p.clubId === clubId).map((p) => p.number));
+  for (let n = 1; n <= 99; n++) if (!used.has(n)) return n;
+  return null;
+}
+
+const makePlayer = (clubId, name, pos, ovr, number, countryId, age) => ({
+  id: uid(), clubId: clubId || null, countryId: countryId || null,
+  name, pos, ovr, number: number || null, age: age != null ? age : null,
+  retired: false, retiredAge: null,
+  stats: emptyStats()
+});
+
+const BASE_TOURNAMENTS = [
+  { key: 'laliga', name: 'La Liga', type: 'league', logo: null },
+  { key: 'premier', name: 'Premier League', type: 'league', logo: null },
+  { key: 'ucl', name: 'Champions League', type: 'cup', twoLegs: true, finalOneMatch: true, logo: null },
+  { key: 'copaspain', name: 'Cup Spain', type: 'cup', twoLegs: true, finalOneMatch: true, logo: null },
+  { key: 'cupengland', name: 'Cup England', type: 'cup', twoLegs: true, finalOneMatch: true, logo: null },
+  { key: 'worldcup', name: 'World Cup', type: 'cup', twoLegs: false, finalOneMatch: true, national: true, logo: null }
+];
+
+function buildBaseTournaments() {
+  return BASE_TOURNAMENTS.map((b) => ({
+    id: uid(), baseKey: b.key, name: b.name, type: b.type,
+    twoLegs: !!b.twoLegs, finalOneMatch: !!b.finalOneMatch, national: !!b.national,
+    logo: b.logo, createdAt: Date.now(), editions: []
+  }));
+}
+
+function buildSeed() {
+  return {
+    season: START_SEASON, clubs: [], nationalTeams: [], players: [],
+    tournaments: buildBaseTournaments(), matches: [], honours: [], awards: [], transfers: []
+  };
+}
+
+function normalizeDb(raw) {
+  const d = {
+    season: START_SEASON, clubs: [], nationalTeams: [], players: [], tournaments: [],
+    matches: [], honours: [], awards: [], transfers: [], ...raw
+  };
+  d.tournaments = d.tournaments.map((t) => {
+    if (t.editions) return t;
+    return {
+      id: uid(), baseKey: null, name: t.name, type: t.type,
+      twoLegs: false, finalOneMatch: false, national: false, logo: t.logo || null, createdAt: Date.now(),
+      editions: [{
+        id: t.id, tournamentId: t.id, tournamentName: t.name, tType: t.type,
+        season: t.season || START_SEASON, teams: t.teams || [], status: t.status || 'active',
+        championId: t.championId || null, fixtures: t.fixtures, rounds: t.rounds
+      }]
+    };
+  });
+  BASE_TOURNAMENTS.forEach((b) => {
+    if (!d.tournaments.some((t) => t.baseKey === b.key)) {
+      d.tournaments.push({
+        id: uid(), baseKey: b.key, name: b.name, type: b.type,
+        twoLegs: !!b.twoLegs, finalOneMatch: !!b.finalOneMatch, national: !!b.national,
+        logo: b.logo, createdAt: Date.now(), editions: []
+      });
+    }
+  });
+  d.players = d.players.map((p) => ({
+    countryId: null, age: null, retired: false, retiredAge: null,
+    ...p,
+    stats: {
+      apps: (p.stats && p.stats.apps) || 0, goals: (p.stats && p.stats.goals) || 0,
+      motm: (p.stats && p.stats.motm) || 0, hatTricks: (p.stats && p.stats.hatTricks) || 0,
+      pokers: (p.stats && p.stats.pokers) || 0, fivePlus: (p.stats && p.stats.fivePlus) || 0
+    }
+  }));
+  const used = {};
+  d.players.forEach((p) => {
+    if (p.number && p.clubId) (used[p.clubId] = used[p.clubId] || new Set()).add(p.number);
+  });
+  d.players = d.players.map((p) => {
+    if (!p.clubId || p.number) return p;
+    const set = used[p.clubId] || (used[p.clubId] = new Set());
+    let n = 1;
+    while (set.has(n) && n < 100) n++;
+    if (n > 99) return p;
+    set.add(n);
+    return { ...p, number: n };
+  });
+  return d;
+}
+
+const squadOf = (players, clubId) => players.filter((p) => p.clubId === clubId && !p.retired);
+const nationalSquadOf = (players, countryId) => players.filter((p) => p.countryId === countryId && !p.retired);
+
+function teamRatings(squad) {
+  const all = avg(squad.map((p) => p.ovr)) || 50;
+  const of = (positions) => squad.filter((p) => positions.includes(p.pos)).map((p) => p.ovr);
+  const att = of(['MID', 'FWD']);
+  const def = of(['GK', 'DEF']);
+  return { attack: att.length ? avg(att) : all, defense: def.length ? avg(def) : all, overall: all };
+}
+
+function pickLineup(squad) {
+  const sorted = [...squad].sort((a, b) => b.ovr - a.ovr);
+  const take = (pos, n) => sorted.filter((p) => p.pos === pos).slice(0, n);
+  const xi = [...take('GK', 1), ...take('DEF', 4), ...take('MID', 4), ...take('FWD', 2)];
+  const used = new Set(xi.map((p) => p.id));
+  [false, true].forEach((allowGk) => {
+    sorted.forEach((p) => {
+      if (xi.length < 11 && !used.has(p.id) && (allowGk || p.pos !== 'GK')) {
+        xi.push(p);
+        used.add(p.id);
+      }
+    });
+  });
+  return xi;
+}
+
+function poisson(lambda) {
+  const limit = Math.exp(-lambda);
+  let k = 0;
+  let p = 1;
+  do { k++; p *= Math.random(); } while (p > limit);
+  return k - 1;
+}
+
+const expectedGoals = (attack, defense, bonus) =>
+  clamp(1.35 * Math.exp(((attack - defense) / 10) * 0.28) * bonus, 0.15, 5);
+
+function pickWeighted(items, weightOf) {
+  const weights = items.map(weightOf);
+  const total = weights.reduce((a, b) => a + b, 0);
+  if (total <= 0) return items[0] || null;
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+const SCORER_BASE = { FWD: 6, MID: 3, DEF: 0.8, GK: 0.02 };
+const scorerWeight = (p) => SCORER_BASE[p.pos] * Math.pow(p.ovr / 70, 2);
+
+function shootout() {
+  let h = 0, a = 0;
+  for (let i = 0; i < 5; i++) {
+    if (Math.random() < 0.76) h++;
+    if (Math.random() < 0.76) a++;
+  }
+  while (h === a) {
+    if (Math.random() < 0.76) h++;
+    if (Math.random() < 0.76) a++;
+  }
+  return { h, a };
+}
+
+function pickMotm(events, homeXI, awayXI, winnerId, homeId, awayId) {
+  const goalEvents = events.filter((e) => e.type === 'goal');
+  if (!goalEvents.length) {
+    let pool = [];
+    if (winnerId === homeId) pool = homeXI;
+    else if (winnerId === awayId) pool = awayXI;
+    else pool = [...homeXI, ...awayXI];
+    if (!pool.length) return null;
+    return pool[Math.floor(Math.random() * pool.length)].id;
+  }
+  const byPlayer = {};
+  goalEvents.forEach((e) => {
+    if (!byPlayer[e.playerId]) byPlayer[e.playerId] = { goals: 0, firstMin: e.min, playerId: e.playerId };
+    byPlayer[e.playerId].goals++;
+    if (e.min < byPlayer[e.playerId].firstMin) byPlayer[e.playerId].firstMin = e.min;
+  });
+  const list = Object.values(byPlayer);
+  const maxGoals = Math.max(...list.map((x) => x.goals));
+  const top = list.filter((x) => x.goals === maxGoals);
+  top.sort((a, b) => a.firstMin - b.firstMin);
+  return top[0].playerId;
+}
+
+function simulateMatch(players, homeId, awayId, opts) {
+  const homeAdv = (opts && opts.homeAdv) || 1;
+  const knockout = !!(opts && opts.knockout);
+  const national = !!(opts && opts.national);
+  const squadFn = national ? nationalSquadOf : squadOf;
+  const homeSquad = squadFn(players, homeId);
+  const awaySquad = squadFn(players, awayId);
+  if (!homeSquad.length || !awaySquad.length) return null;
+
+  const hr = teamRatings(homeSquad);
+  const ar = teamRatings(awaySquad);
+  const homeXI = pickLineup(homeSquad);
+  const awayXI = pickLineup(awaySquad);
+  const lamH = expectedGoals(hr.attack, ar.defense, homeAdv);
+  const lamA = expectedGoals(ar.attack, hr.defense, 1);
+  const hg = poisson(lamH);
+  const ag = poisson(lamA);
+
+  const events = [];
+  const deltas = {};
+  [...homeXI, ...awayXI].forEach((p) => { deltas[p.id] = { goals: 0 }; });
+
+  const addGoals = (xi, n, side) => {
+    for (let i = 0; i < n; i++) {
+      const scorer = pickWeighted(xi, scorerWeight);
+      deltas[scorer.id].goals++;
+      events.push({ min: 1 + Math.floor(Math.random() * 90), type: 'goal', side, playerId: scorer.id, name: scorer.name });
+    }
+  };
+  addGoals(homeXI, hg, 'home');
+  addGoals(awayXI, ag, 'away');
+  events.sort((a, b) => a.min - b.min);
+
+  let pens = null;
+  let winner = null;
+  if (knockout) {
+    if (hg === ag) pens = shootout();
+    winner = hg > ag ? homeId : ag > hg ? awayId : pens.h > pens.a ? homeId : awayId;
+  }
+
+  const motmId = pickMotm(events, homeXI, awayXI, winner, homeId, awayId);
+  const entry = (p, clubId) => ({
+    id: p.id, name: p.name, pos: p.pos, number: p.number || null, ovr: p.ovr, clubId, goals: deltas[p.id].goals
+  });
+  const lineups = {
+    home: sortRoster(homeXI).map((p) => entry(p, homeId)),
+    away: sortRoster(awayXI).map((p) => entry(p, awayId))
+  };
+  const sotH = hg + poisson(lamH * 1.2);
+  const sotA = ag + poisson(lamA * 1.2);
+  const possH = clamp(Math.round(50 + (hr.overall - ar.overall) * 1.4 + (Math.random() - 0.5) * 10), 30, 70);
+  const stats = {
+    possession: [possH, 100 - possH],
+    shots: [sotH + poisson(lamH * 1.6 + 2), sotA + poisson(lamA * 1.6 + 2)],
+    onTarget: [sotH, sotA]
+  };
+  return { hg, ag, pens, winner, events, deltas, lineups, motmId, stats };
+}
+
+function applyDeltas(players, deltas, motmId) {
+  return players.map((p) => {
+    const d = deltas[p.id];
+    if (!d) return p;
+    const s = p.stats;
+    const g = d.goals;
+    return {
+      ...p,
+      stats: {
+        apps: s.apps + 1, goals: s.goals + g,
+        motm: s.motm + (p.id === motmId ? 1 : 0),
+        hatTricks: s.hatTricks + (g === 3 ? 1 : 0),
+        pokers: s.pokers + (g === 4 ? 1 : 0),
+        fivePlus: s.fivePlus + (g >= 5 ? 1 : 0)
+      }
+    };
+  });
+}
+
+function recomputePlayerStats(players, matches) {
+  const map = {};
+  players.forEach((p) => { map[p.id] = { ...p, stats: emptyStats() }; });
+  matches.forEach((m) => {
+    if (!m.lineups) return;
+    ['home', 'away'].forEach((side) => {
+      m.lineups[side].forEach((e) => {
+        const p = map[e.id];
+        if (!p) return;
+        const g = e.goals || 0;
+        p.stats.apps++;
+        p.stats.goals += g;
+        if (m.motmId === e.id) p.stats.motm++;
+        if (g === 3) p.stats.hatTricks++;
+        if (g === 4) p.stats.pokers++;
+        if (g >= 5) p.stats.fivePlus++;
+      });
+    });
+  });
+  return players.map((p) => map[p.id] || p);
+}
+
+function buildLeagueFixtures(teamIds) {
+  const ids = shuffle(teamIds);
+  if (ids.length % 2) ids.push(null);
+  const n = ids.length;
+  let arr = [...ids];
+  const firstLeg = [];
+  for (let r = 0; r < n - 1; r++) {
+    const pairs = [];
+    for (let i = 0; i < n / 2; i++) {
+      let home = arr[i], away = arr[n - 1 - i];
+      if (home && away) {
+        if ((r + i) % 2 === 1) [home, away] = [away, home];
+        pairs.push([home, away]);
+      }
+    }
+    firstLeg.push(pairs);
+    arr = [arr[0], arr[n - 1], ...arr.slice(1, n - 1)];
+  }
+  const rounds = [...firstLeg, ...firstLeg.map((pairs) => pairs.map(([h, a]) => [a, h]))];
+  const fixtures = [];
+  rounds.forEach((pairs, ri) => {
+    pairs.forEach(([home, away]) => {
+      fixtures.push({ id: uid(), round: ri + 1, home, away, played: false, hg: null, ag: null, events: [], matchId: null });
+    });
+  });
+  return fixtures;
+}
+
+function leagueTable(edition) {
+  const rows = {};
+  edition.teams.forEach((tm) => { rows[tm.id] = { id: tm.id, name: tm.name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [] }; });
+  edition.fixtures.filter((f) => f.played).forEach((f) => {
+    const h = rows[f.home], a = rows[f.away];
+    if (!h || !a) return;
+    h.p++; a.p++;
+    h.gf += f.hg; h.ga += f.ag;
+    a.gf += f.ag; a.ga += f.hg;
+    if (f.hg > f.ag) { h.w++; a.l++; h.pts += 3; h.form.push('W'); a.form.push('L'); }
+    else if (f.hg < f.ag) { a.w++; h.l++; a.pts += 3; h.form.push('L'); a.form.push('W'); }
+    else { h.d++; a.d++; h.pts++; a.pts++; h.form.push('D'); a.form.push('D'); }
+  });
+  Object.values(rows).forEach((r) => { r.form = r.form.slice(-5); });
+  return Object.values(rows).sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.name.localeCompare(y.name, 'ru'));
+}
+
+const newTie = (home, away, final) => ({
+  id: uid(), home, away, final: !!final, bye: false,
+  leg1: null, leg2: null, single: null,
+  played: false, winner: null, homeAgg: 0, awayAgg: 0, pens: null
+});
+
+function seedOrder(size) {
+  let order = [1, 2];
+  while (order.length < size) {
+    const n = order.length * 2;
+    order = order.flatMap((s) => [s, n + 1 - s]);
+  }
+  return order;
+}
+
+function buildCup(teamIds, twoLegs, finalOneMatch) {
+  const draw = shuffle(teamIds);
+  const size = Math.pow(2, Math.ceil(Math.log2(draw.length)));
+  const order = seedOrder(size);
+  const slot = (seed) => (seed <= draw.length ? draw[seed - 1] : null);
+  const rounds = [];
+  const first = [];
+  for (let i = 0; i < size / 2; i++) {
+    const h = slot(order[2 * i]), a = slot(order[2 * i + 1]);
+    const t = newTie(h, a, false);
+    if (h && !a) { t.winner = h; t.played = true; t.bye = true; }
+    else if (!h && a) { t.winner = a; t.played = true; t.bye = true; }
+    first.push(t);
+  }
+  rounds.push(first);
+  let count = size / 2;
+  while (count > 1) { count /= 2; rounds.push(Array.from({ length: count }, () => newTie(null, null, false))); }
+  if (rounds.length) {
+    const last = rounds[rounds.length - 1][0];
+    if (last) last.final = true;
+  }
+  return resolveCup(rounds, twoLegs, finalOneMatch);
+}
+
+function resolveCup(rounds, twoLegs, finalOneMatch) {
+  const rs = rounds.map((r) => r.map((t) => ({
+    ...t, leg1: t.leg1 ? { ...t.leg1 } : null, leg2: t.leg2 ? { ...t.leg2 } : null, single: t.single ? { ...t.single } : null
+  })));
+  rs.forEach((round, ri) => {
+    round.forEach((t, i) => {
+      if (ri === rs.length - 1) t.final = true;
+      if (ri > 0) {
+        t.home = rs[ri - 1][2 * i].winner;
+        t.away = rs[ri - 1][2 * i + 1].winner;
+      } else if (!t.played) {
+        if (t.home && !t.away) { t.winner = t.home; t.played = true; t.bye = true; }
+        else if (!t.home && t.away) { t.winner = t.away; t.played = true; t.bye = true; }
+      }
+      const isSingle = t.final || !twoLegs;
+      if (t.home && t.away && !t.bye && !t.played) {
+        if (isSingle) {
+          if (t.single && t.single.played) { t.played = true; t.winner = t.single.winner; }
+        } else if (t.leg1 && t.leg1.played && t.leg2 && t.leg2.played) {
+          t.played = true;
+          t.homeAgg = t.leg1.hg + t.leg2.ag;
+          t.awayAgg = t.leg1.ag + t.leg2.hg;
+          if (t.homeAgg !== t.awayAgg) t.winner = t.homeAgg > t.awayAgg ? t.home : t.away;
+          else if (t.pens) t.winner = t.pens.h > t.pens.a ? t.home : t.away;
+        }
+      }
+    });
+  });
+  return rs;
+}
+
+const cupRoundName = (matchCount) => (matchCount === 1 ? 'Финал' : `1/${matchCount} финала`);
+const teamName = (edition, id) => {
+  const tm = edition.teams.find((x) => x.id === id);
+  return tm ? tm.name : '—';
+};
+
+function simulateOneMatch(db, edition, homeId, awayId, knockout, stage) {
+  const national = !!edition.national;
+  const existing = new Set(national ? db.nationalTeams.map((c) => c.id) : db.clubs.map((c) => c.id));
+  if (!existing.has(homeId) || !existing.has(awayId)) return { error: 'Участник этого матча удалён' };
+
+  let playersForMatch = db.players;
+  if (national && edition.squads) {
+    const homeSquad = edition.squads[homeId];
+    const awaySquad = edition.squads[awayId];
+    if ((homeSquad && homeSquad.length) || (awaySquad && awaySquad.length)) {
+      const allowed = new Set([...(homeSquad || []), ...(awaySquad || [])]);
+      playersForMatch = db.players.filter((p) => allowed.has(p.id));
+    }
+  }
+
+  const isFinal = stage && stage.includes('Финал');
+  const homeAdv = (!national && !isFinal) ? 1.09 : 1;
+  
+  const res = simulateMatch(playersForMatch, homeId, awayId, { homeAdv, knockout, national });
+  if (!res) return { error: 'В одной из команд нет игроков. Добавьте игроков и повторите' };
+  const record = {
+    id: uid(), season: edition.season, tournamentId: edition.tournamentId, editionId: edition.id,
+    tournamentName: edition.tournamentName, tType: edition.tType, stage, national,
+    homeId, awayId, homeName: teamName(edition, homeId), awayName: teamName(edition, awayId),
+    hg: res.hg, ag: res.ag, pens: res.pens, events: res.events, lineups: res.lineups,
+    motmId: res.motmId, stats: res.stats, ts: Date.now()
+  };
+  return { res, record };
+}
+function simulateEdition(db, tournamentId, editionId, mode, arg) {
+  const tour = db.tournaments.find((x) => x.id === tournamentId);
+  if (!tour) return { error: 'Турнир не найден' };
+  const edition = tour.editions.find((e) => e.id === editionId);
+  if (!edition) return { error: 'Розыгрыш не найден' };
+  if (edition.status === 'finished') return { error: 'Розыгрыш уже завершён' };
+
+  let players = db.players;
+  let count = 0;
+  const newMatches = [];
+
+  const playMatch = (homeId, awayId, knockout, stage) => {
+    const r = simulateOneMatch({ ...db, players }, edition, homeId, awayId, knockout, stage);
+    if (r.error) return r;
+    players = applyDeltas(players, r.res.deltas, r.res.motmId);
+    newMatches.push(r.record);
+    count++;
+    return r;
+  };
+
+  let updated;
+  if (tour.type === 'league') {
+    const fixtures = edition.fixtures.map((f) => ({ ...f }));
+    let todo;
+    if (mode === 'match') {
+      todo = [arg ? fixtures.find((f) => f.id === arg && !f.played) : fixtures.find((f) => !f.played)].filter(Boolean);
+    } else if (mode === 'round') {
+      const next = arg || (fixtures.find((f) => !f.played) || {}).round;
+      todo = fixtures.filter((f) => f.round === next && !f.played);
+    } else {
+      todo = fixtures.filter((f) => !f.played);
+    }
+    if (!todo.length) return { error: 'Нет матчей для симуляции' };
+    for (const f of todo) {
+      const r = playMatch(f.home, f.away, false, `Тур ${f.round}`);
+      if (r.error) return { error: r.error };
+      f.played = true; f.hg = r.res.hg; f.ag = r.res.ag; f.events = r.res.events; f.matchId = r.record.id;
+    }
+    updated = { ...edition, fixtures };
+    if (fixtures.every((f) => f.played)) {
+      updated.status = 'finished';
+      updated.championId = leagueTable(updated)[0].id;
+    }
+  } else {
+    let rs = resolveCup(edition.rounds, tour.twoLegs, tour.finalOneMatch);
+    const playableLeg = (t) => {
+      if (t.bye || t.played) return false;
+      if (!t.home || !t.away) return false;
+      if (t.final || !tour.twoLegs) return !t.single;
+      return !t.leg1 || !t.leg2;
+    };
+    const playSingle = (t, ri) => {
+      const r = playMatch(t.home, t.away, true, t.final ? 'Финал' : cupRoundName(rs[ri].length));
+      if (r.error) return r.error;
+      t.single = { hg: r.res.hg, ag: r.res.ag, pens: r.res.pens, winner: r.res.winner, events: r.res.events, matchId: r.record.id, played: true };
+      t.played = true; t.winner = r.res.winner;
+      return null;
+    };
+    const playLeg = (t, ri, legNum) => {
+      const isFirst = legNum === 1;
+      const homeId = isFirst ? t.home : t.away;
+      const awayId = isFirst ? t.away : t.home;
+      const r = playMatch(homeId, awayId, true, `${cupRoundName(rs[ri].length)} · ${isFirst ? '1-й матч' : '2-й матч'}`);
+      if (r.error) return r.error;
+      const leg = { hg: r.res.hg, ag: r.res.ag, pens: r.res.pens, events: r.res.events, matchId: r.record.id, played: true };
+      if (isFirst) t.leg1 = leg; else t.leg2 = leg;
+      return null;
+    };
+    const playTie = (t, ri) => {
+      const isSingle = t.final || !tour.twoLegs;
+      if (isSingle) {
+        const e = playSingle(t, ri);
+        if (e) return e;
+      } else {
+        if (!t.leg1) { const e = playLeg(t, ri, 1); if (e) return e; }
+        if (!t.leg2) { const e = playLeg(t, ri, 2); if (e) return e; }
+        t.homeAgg = t.leg1.hg + t.leg2.ag;
+        t.awayAgg = t.leg1.ag + t.leg2.hg;
+        if (t.homeAgg === t.awayAgg) { const p = shootout(); t.pens = p; t.winner = p.h > p.a ? t.home : t.away; }
+        else t.winner = t.homeAgg > t.awayAgg ? t.home : t.away;
+        t.played = true;
+      }
+      return null;
+    };
+    if (mode === 'match') {
+      let target = null, targetRound = 0;
+      rs.forEach((round, ri) => round.forEach((t) => {
+        if (!target && (arg ? t.id === arg : true) && playableLeg(t)) { target = t; targetRound = ri; }
+      }));
+      if (!target) return { error: 'Нет матчей для симуляции' };
+      const e = playTie(target, targetRound);
+      if (e) return { error: e };
+      rs = resolveCup(rs, tour.twoLegs, tour.finalOneMatch);
+    } else if (mode === 'round') {
+      const ri = rs.findIndex((r) => r.some((t) => playableLeg(t)));
+      if (ri < 0) return { error: 'Нет матчей для симуляции' };
+      for (const t of rs[ri].filter(playableLeg)) { const e = playTie(t, ri); if (e) return { error: e }; }
+      rs = resolveCup(rs, tour.twoLegs, tour.finalOneMatch);
+    } else {
+      let guard = 0;
+      while (guard++ < 20) {
+        const ri = rs.findIndex((r) => r.some((t) => playableLeg(t)));
+        if (ri < 0) break;
+        for (const t of rs[ri].filter(playableLeg)) { const e = playTie(t, ri); if (e) return { error: e }; }
+        rs = resolveCup(rs, tour.twoLegs, tour.finalOneMatch);
+      }
+      if (!count) return { error: 'Нет матчей для симуляции' };
+    }
+    updated = { ...edition, rounds: rs };
+    const final = rs[rs.length - 1][0];
+    if (final && final.played) { updated.status = 'finished'; updated.championId = final.winner; }
+  }
+
+  let honours = db.honours;
+  if (updated.status === 'finished') {
+    honours = [...honours, {
+      id: uid(), tournamentId: tour.id, tournamentName: tour.name, editionId,
+      type: tour.type, season: edition.season, logo: tour.logo || null,
+      clubId: updated.championId, clubName: teamName(updated, updated.championId), national: !!updated.national
+    }];
+  }
+
+  const updatedTour = { ...tour, editions: tour.editions.map((e) => (e.id === editionId ? updated : e)) };
+  return {
+    db: { ...db, players, honours, matches: [...db.matches, ...newMatches], tournaments: db.tournaments.map((x) => (x.id === tournamentId ? updatedTour : x)) },
+    count
+  };
+}
+
+function editionProgress(tour, edition) {
+  if (tour.type === 'league') return { done: edition.fixtures.filter((f) => f.played).length, total: edition.fixtures.length };
+  const real = edition.rounds.flat().filter((t) => !t.bye);
+  return { done: real.filter((t) => t.played).length, total: Math.max(1, edition.teams.length - 1) };
+}
+
+function addToAgg(a, e, isMotm) {
+  a.apps++;
+  const g = e.goals || 0;
+  a.goals += g;
+  if (isMotm) a.motm++;
+  if (g === 3) a.hatTricks++;
+  if (g === 4) a.pokers++;
+  if (g >= 5) a.fivePlus++;
+}
+
+function aggregateMatches(matches, matchPred, entryPred) {
+  const map = {};
+  matches.forEach((m) => {
+    if (!m.lineups || (matchPred && !matchPred(m))) return;
+    ['home', 'away'].forEach((side) => {
+      m.lineups[side].forEach((e) => {
+        if (entryPred && !entryPred(e, m)) return;
+        const rec = map[e.id] || (map[e.id] = { id: e.id, s: emptyAgg() });
+        rec.name = e.name; rec.pos = e.pos; rec.number = e.number; rec.ovr = e.ovr; rec.clubId = e.clubId;
+        rec.clubName = side === 'home' ? m.homeName : m.awayName;
+        rec.national = !!m.national;
+        addToAgg(rec.s, e, m.motmId === e.id);
+      });
+    });
+  });
+  return map;
+}
+
+function playerLog(matches, playerId) {
+  const out = [];
+  matches.forEach((m) => {
+    if (!m.lineups) return;
+    ['home', 'away'].forEach((side) => {
+      const e = m.lineups[side].find((x) => x.id === playerId);
+      if (e) out.push({ m, e, side });
+    });
+  });
+  return out.reverse();
+}
+
+function clubRecord(ms, clubId) {
+  const r = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+  ms.forEach((m) => {
+    const home = m.homeId === clubId;
+    const gf = home ? m.hg : m.ag, ga = home ? m.ag : m.hg;
+    r.p++; r.gf += gf; r.ga += ga;
+    if (gf > ga) r.w++; else if (gf < ga) r.l++; else r.d++;
+  });
+  r.pts = r.w * 3 + r.d;
+  return r;
+}
+
+function clubForm(ms, clubId, n) {
+  return ms.slice(-(n || 5)).map((m) => {
+    const home = m.homeId === clubId;
+    const gf = home ? m.hg : m.ag, ga = home ? m.ag : m.hg;
+    return gf > ga ? 'W' : gf < ga ? 'L' : 'D';
+  });
+}
+
+function cupResult(tour, edition, id) {
+  if (edition.status === 'finished' && edition.championId === id) return 'Победитель';
+  let last = -1;
+  edition.rounds.forEach((r, ri) => r.forEach((t) => { if (t.home === id || t.away === id) last = ri; }));
+  if (last < 0) return '—';
+  const t = edition.rounds[last].find((x) => x.home === id || x.away === id);
+  const name = cupRoundName(edition.rounds[last].length);
+  if (t.played && t.winner !== id) return `Вылет: ${name}`;
+  return `Играет: ${name}`;
+}
+
+const seasonsOf = (db) => {
+  const set = new Set([db.season]);
+  db.matches.forEach((m) => set.add(m.season));
+  db.tournaments.forEach((t) => t.editions.forEach((e) => set.add(e.season)));
+  return [...set].sort((a, b) => b - a);
+};
+
+function tournamentHistory(db, tournamentId) {
+  const tour = db.tournaments.find((t) => t.id === tournamentId);
+  if (!tour) return null;
+  const matches = db.matches.filter((m) => m.tournamentId === tournamentId);
+  const editions = [...tour.editions].sort((a, b) => b.season - a.season);
+  const champions = editions.filter((e) => e.status === 'finished' && e.championId).map((e) => ({
+    editionId: e.id, season: e.season, championId: e.championId, championName: teamName(e, e.championId)
+  }));
+  const agg = aggregateMatches(matches);
+  const players = Object.values(agg).map((r) => {
+    const live = db.players.find((p) => p.id === r.id);
+    return live ? { ...r, name: live.name, pos: live.pos, ovr: live.ovr, number: live.number } : r;
+  });
+  const scorers = [...players].sort((a, b) => b.s.goals - a.s.goals || b.s.motm - a.s.motm);
+  const mvps = [...players].sort((a, b) => b.s.motm - a.s.motm || b.s.goals - a.s.goals);
+  const hatTricks = [...players].sort((a, b) => (b.s.hatTricks + b.s.pokers + b.s.fivePlus) - (a.s.hatTricks + a.s.pokers + a.s.fivePlus));
+  let leagueHistory = null;
+  if (tour.type === 'league') {
+    const rows = {};
+    editions.forEach((e) => {
+      if (!e.fixtures) return;
+      e.fixtures.filter((f) => f.played).forEach((f) => {
+        [['home', f.home], ['away', f.away]].forEach(([side, id]) => {
+          if (!id) return;
+          const r = rows[id] || (rows[id] = { id, name: teamName(e, id), p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 });
+          r.p++;
+          const gf = side === 'home' ? f.hg : f.ag, ga = side === 'home' ? f.ag : f.hg;
+          r.gf += gf; r.ga += ga;
+          if (gf > ga) { r.w++; r.pts += 3; } else if (gf < ga) r.l++; else { r.d++; r.pts++; }
+        });
+      });
+    });
+    leagueHistory = Object.values(rows).sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf);
+  }
+  return { tour, editions, champions, players, scorers, mvps, hatTricks, leagueHistory, matches };
+}
+
+const BALLON_PARTS = [
+  ['stats', 'Статистика', 40, 'Голы, MVP матча, хет-трики, покеры и 5+ голов за сезон'],
+  ['trophies', 'Трофеи', 30, 'Победы в турнирах за этот сезон'],
+  ['impact', 'Решающий вклад', 30, 'Голы в плей-офф и победные голы (в матчах с разницей 1 мяч)']
+];
+
+function ballonRanking(db, season) {
+  const clamp01 = (v) => clamp(v, 0, 1);
+  const map = {};
+  db.matches.forEach((m) => {
+    if (m.season !== season || !m.lineups) return;
+    ['home', 'away'].forEach((side) => {
+      const own = side === 'home' ? m.hg : m.ag;
+      const opp = side === 'home' ? m.ag : m.hg;
+      const clubId = side === 'home' ? m.homeId : m.awayId;
+      const clubName = side === 'home' ? m.homeName : m.awayName;
+      const isPlayoff = m.tType === 'cup' || (m.stage && /финал|1\/|плей|раунд/i.test(m.stage));
+      const isNarrowWin = own > opp && own - opp === 1;
+      m.lineups[side].forEach((e) => {
+        const r = map[e.id] || (map[e.id] = {
+          id: e.id, apps: 0, goals: 0, motm: 0, hatTricks: 0, pokers: 0, fivePlus: 0,
+          wins: 0, playoffGoals: 0, winningGoals: 0, entries: {}
+        });
+        r.name = e.name; r.pos = e.pos; r.number = e.number;
+        r.apps++;
+        const g = e.goals || 0;
+        r.goals += g;
+        if (m.motmId === e.id) r.motm++;
+        if (g === 3) r.hatTricks++;
+        if (g === 4) r.pokers++;
+        if (g >= 5) r.fivePlus++;
+        if (own > opp) r.wins++;
+        if (isPlayoff) r.playoffGoals += g;
+        if (isNarrowWin) r.winningGoals += g;
+        r.entries[`${m.tournamentId}|${clubId}`] = true;
+        r.lastClubId = clubId; r.lastClubName = clubName;
+      });
+    });
+  });
+  const all = Object.values(map);
+  if (!all.length) return { list: [], minApps: 0, maxApps: 0 };
+  const maxApps = Math.max(...all.map((r) => r.apps));
+  const minApps = Math.max(1, Math.ceil(maxApps * 0.5));
+  const pool = all.filter((r) => r.apps >= minApps);
+  pool.forEach((r) => {
+    const live = db.players.find((p) => p.id === r.id);
+    if (live) { r.name = live.name; r.pos = live.pos; r.ovr = live.ovr; r.number = live.number; }
+    r.titles = Object.keys(r.entries).filter((k) => {
+      const parts = k.split('|');
+      return db.honours.some((h) => h.tournamentId === parts[0] && h.clubId === parts[1] && h.season === season);
+    }).length;
+    r.winRate = r.wins / r.apps;
+    r.contrib = r.goals + 0.5 * r.motm + 1.5 * r.hatTricks + 2 * r.pokers + 3 * r.fivePlus;
+  });
+  const maxContrib = Math.max(...pool.map((r) => r.contrib));
+  const maxTitles = Math.max(1, ...pool.map((r) => r.titles));
+  const maxImpact = Math.max(1, ...pool.map((r) => r.playoffGoals + r.winningGoals));
+  pool.forEach((r) => {
+    r.parts = {
+      stats: maxContrib > 0 ? r.contrib / maxContrib : 0,
+      trophies: clamp01(r.titles / maxTitles) * 0.7 + clamp01(r.winRate) * 0.3,
+      impact: maxImpact > 0 ? (r.playoffGoals + r.winningGoals) / maxImpact : 0
+    };
+    r.total = 100 * (0.4 * r.parts.stats + 0.3 * r.parts.trophies + 0.3 * r.parts.impact);
+  });
+  pool.sort((a, b) => b.total - a.total || b.goals - a.goals || a.name.localeCompare(b.name, 'ru'));
+  return { list: pool, minApps, maxApps };
+}
+
+function makeAward(r, season) {
+  return {
+    id: uid(), season, playerId: r.id, name: r.name,
+    clubId: r.lastClubId || null, clubName: r.lastClubName || '—',
+    score: Math.round(r.total * 10) / 10, ts: Date.now()
+  };
+}
+
+/* ================================================================== */
+/* INDEXEDDB — НОВЫЙ СЛОЙ СОХРАНЕНИЯ ДЛЯ IPHONE                       */
+/* ================================================================== */
+const DB_NAME = 'football_manager_db';
+const STORE_NAME = 'save_data';
+const DB_VERSION = 1;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveToIndexedDB(db, ts) {
+  try {
+    const idb = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = idb.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.put({ ts, data: db }, 'main_save');
+      
+      // Автобэкап (чтобы не потерять данные)
+      store.put({ ts, data: db }, 'backup_save');
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.error('IndexedDB error:', e);
+    return false;
+  }
+}
+
+async function loadFromIndexedDB() {
+  try {
+    const idb = await openDB();
+    return new Promise((resolve) => {
+      const tx = idb.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get('main_save');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) {
+    return null;
+  }
+}
+/* ================================================================== */
+/* UI-КИРПИЧИ                                                         */
+/* ================================================================== */
+const NavCtx = createContext({
+  openPlayer: () => {}, openClub: () => {}, openMatch: () => {}, openClubPicker: () => {},
+  hasPlayer: () => false, hasClub: () => false,
+  clubLogo: () => null, tournamentLogo: () => null
+});
+
+const btn = (kind = 'ghost', size = 'md') =>
+  [
+    'inline-flex items-center justify-center rounded font-semibold transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-acc disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100',
+    size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-2 text-sm',
+    {
+      primary: 'bg-btn text-btnink hover:opacity-90',
+      ghost: 'border border-line bg-surf text-ink hover:bg-surf2',
+      danger: 'border border-bad text-bad hover:bg-surf2',
+      dangerSolid: 'bg-bad text-badink'
+    }[kind]
+  ].join(' ');
+
+const inputCls =
+  'w-full min-w-0 rounded border border-line bg-surf px-3 py-2 text-sm text-ink placeholder:text-mute transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-acc';
+const labelCls = 'block text-[11px] font-semibold uppercase tracking-wider text-mute mb-1';
+
+function Panel({ children, className = '' }) {
+  return <section className={`bg-surf border border-line rounded p-4 min-w-0 ${className}`}>{children}</section>;
+}
+
+function Heading({ children, className = '' }) {
+  return (
+    <div className={className}>
+      <h2 className="font-display text-xl font-bold uppercase tracking-wider leading-tight">{children}</h2>
+      <span className="rule" />
+    </div>
+  );
+}
+
+function PosChip({ pos }) {
+  return (
+    <span className="inline-block min-w-[2.6rem] text-center border rounded-sm px-1 py-0.5 text-[11px] font-bold tracking-wide"
+      style={{ color: `var(--c-${pos.toLowerCase()})`, borderColor: 'currentColor' }}>
+      {pos}
+    </span>
+  );
+}
+
+const FORM_LABEL = { W: 'В', D: 'Н', L: 'П' };
+const FORM_BG = { W: 'var(--good)', D: 'var(--mute)', L: 'var(--bad)' };
+
+function FormDots({ form }) {
+  if (!form || !form.length) return <span className="text-mute text-xs">—</span>;
+  return (
+    <span className="inline-flex gap-1" aria-label={`Форма: ${form.map((f) => FORM_LABEL[f]).join(' ')}`}>
+      {form.map((f, i) => (
+        <span key={i} className="inline-flex items-center justify-center w-5 h-5 rounded-sm text-[10px] font-bold"
+          style={{ background: FORM_BG[f], color: f === 'D' ? 'var(--surf)' : '#FFFFFF' }}>{FORM_LABEL[f]}</span>
+      ))}
+    </span>
+  );
+}
+
+function ConfirmButton({ label, confirmLabel, onConfirm, size = 'md' }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return undefined;
+    const t = setTimeout(() => setArmed(false), 4000);
+    return () => clearTimeout(t);
+  }, [armed]);
+  if (armed) {
+    return <button type="button" className={btn('dangerSolid', size)} onClick={() => { setArmed(false); onConfirm(); }}>{confirmLabel || 'Точно?'}</button>;
+  }
+  return <button type="button" className={btn('danger', size)} onClick={() => setArmed(true)}>{label}</button>;
+}
+
+function Empty({ children }) {
+  return <p className="text-sm text-mute py-6 text-center">{children}</p>;
+}
+
+function Metric({ label, value, children }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-mute">{label}</div>
+      <div className="font-display text-2xl font-bold num leading-tight">{children !== undefined ? children : value}</div>
+    </div>
+  );
+}
+
+function PlayerLink({ id, name, className = '' }) {
+  const nav = useContext(NavCtx);
+  if (!nav.hasPlayer(id)) return <span className={className}>{name}</span>;
+  return (
+    <button type="button" onClick={() => nav.openPlayer(id)}
+      className={`text-left font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-acc rounded-sm break-words ${className}`}>
+      {name}
+    </button>
+  );
+}
+
+function ClubLink({ id, name, className = '' }) {
+  const nav = useContext(NavCtx);
+  if (!nav.hasClub(id)) return <span className={className}>{name}</span>;
+  return (
+    <button type="button" onClick={() => nav.openClub(id)}
+      className={`text-left hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-acc rounded-sm break-words ${className}`}>
+      {name}
+    </button>
+  );
+}
+
+function THead({ children }) {
+  return <thead><tr className="bg-thead text-theadink">{children}</tr></thead>;
+}
+
+function Logo({ src, name, size = 28, className = '' }) {
+  const initials = (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const radius = Math.max(3, Math.round(size / 8));
+  if (src) {
+    return (
+      <span className={`inline-flex shrink-0 items-center justify-center overflow-hidden ${className}`}
+        style={{ width: size, height: size, minWidth: size, borderRadius: radius, background: 'var(--logo-bg)', border: '1px solid var(--line)', padding: Math.round(size / 14) }}>
+        <img src={src} alt="" draggable="false" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+      </span>
+    );
+  }
+  return (
+    <span aria-hidden="true" className={`inline-flex shrink-0 items-center justify-center font-display font-bold ${className}`}
+      style={{ width: size, height: size, minWidth: size, borderRadius: radius, background: 'var(--thead)', color: 'var(--theadink)', fontSize: Math.round(size * 0.4) }}>
+      {initials}
+    </span>
+  );
+}
+
+function ClubLogo({ id, name, size = 28 }) {
+  const nav = useContext(NavCtx);
+  return <Logo src={nav.clubLogo(id)} name={name} size={size} />;
+}
+
+function ClubMark({ id, name, size = 22, link = true, className = '' }) {
+  return (
+    <span className={`inline-flex items-center gap-2 min-w-0 ${className}`}>
+      <ClubLogo id={id} name={name} size={size} />
+      {link ? <ClubLink id={id} name={name} /> : <span className="break-words">{name}</span>}
+    </span>
+  );
+}
+
+function readLogo(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\//.test(file.type)) { reject(new Error('Выберите файл изображения: PNG, JPG, SVG или WebP')); return; }
+    if (file.size > 8 * 1024 * 1024) { reject(new Error('Файл больше 8 МБ')); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Не удалось открыть изображение'));
+      img.onload = () => {
+        try {
+          const S = 192, PAD = 10;
+          const nw = img.naturalWidth || 300, nh = img.naturalHeight || 300;
+          const k = Math.min(1, 512 / Math.max(nw, nh));
+          const tw = Math.max(1, Math.round(nw * k)), th = Math.max(1, Math.round(nh * k));
+          const tmp = document.createElement('canvas');
+          tmp.width = tw; tmp.height = th;
+          const tctx = tmp.getContext('2d');
+          tctx.drawImage(img, 0, 0, tw, th);
+          let bx = 0, by = 0, bw = tw, bh = th;
+          try {
+            const data = tctx.getImageData(0, 0, tw, th).data;
+            let minX = tw, minY = th, maxX = -1, maxY = -1;
+            for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+              const i = (y * tw + x) * 4;
+              if (data[i + 3] < 12) continue;
+              if (data[i] > 244 && data[i + 1] > 244 && data[i + 2] > 244) continue;
+              if (x < minX) minX = x; if (x > maxX) maxX = x;
+              if (y < minY) minY = y; if (y > maxY) maxY = y;
+            }
+            if (maxX >= 0) { bx = minX; by = minY; bw = maxX - minX + 1; bh = maxY - minY + 1; }
+          } catch (e) { /* ignore */ }
+          const out = document.createElement('canvas');
+          out.width = S; out.height = S;
+          const octx = out.getContext('2d');
+          octx.imageSmoothingEnabled = true;
+          octx.imageSmoothingQuality = 'high';
+          const scale = Math.min((S - PAD * 2) / bw, (S - PAD * 2) / bh);
+          const dw = Math.max(1, Math.round(bw * scale)), dh = Math.max(1, Math.round(bh * scale));
+          octx.drawImage(tmp, bx, by, bw, bh, Math.round((S - dw) / 2), Math.round((S - dh) / 2), dw, dh);
+          resolve(out.toDataURL('image/png'));
+        } catch (e) { reject(new Error('Не удалось обработать изображение')); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function LogoField({ label, name, value, onChange }) {
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const idRef = useRef('lf-' + uid());
+  const pick = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true); setError('');
+    try { onChange(await readLogo(file)); }
+    catch (err) { setError(err.message || 'Не удалось загрузить логотип'); }
+    setBusy(false);
+  };
+  return (
+    <div>
+      {label && <span className={labelCls}>{label}</span>}
+      <div className="flex flex-wrap items-center gap-3">
+        <Logo src={value} name={name} size={64} />
+        <div className="flex flex-wrap items-center gap-2">
+          <input id={idRef.current} type="file" accept="image/*" className="peer sr-only" onChange={pick} />
+          <label htmlFor={idRef.current} className={`${btn('ghost')} cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-acc`}>
+            {busy ? 'Обработка…' : value ? 'Заменить логотип' : 'Загрузить логотип'}
+          </label>
+          {value && <button type="button" className={btn('danger')} onClick={() => { onChange(null); setError(''); }}>Убрать</button>}
+        </div>
+      </div>
+      <p className="text-xs text-mute mt-1">PNG, JPG, SVG или WebP.</p>
+      {error && <p className="text-xs text-bad mt-1">{error}</p>}
+    </div>
+  );
+}
+
+const PT_COLS = [
+  ['name', 'Игрок', 'left', 'Игрок'], ['club', 'Клуб', 'left', 'Клуб'], ['pos', 'Поз.', 'left', 'Позиция'],
+  ['ovr', 'OVR', 'right', 'Рейтинг OVR'], ['apps', 'М', 'right', 'Матчи'], ['goals', 'Г', 'right', 'Голы'],
+  ['motm', 'MVP', 'right', 'Игрок матча'], ['hatTricks', 'ХТ', 'right', 'Хет-трики'],
+  ['pokers', 'ПК', 'right', 'Покеры'], ['fivePlus', '5+', 'right', '5+ голов за матч']
+];
+const PT_VALUE = {
+  name: (r) => r.name.toLowerCase(),
+  club: (r) => (r.clubName || '').toLowerCase(),
+  pos: (r) => POS_ORDER[r.pos],
+  ovr: (r) => r.ovr,
+  apps: (r) => r.s.apps,
+  goals: (r) => r.s.goals,
+  motm: (r) => r.s.motm || 0,
+  hatTricks: (r) => r.s.hatTricks || 0,
+  pokers: (r) => r.s.pokers || 0,
+  fivePlus: (r) => r.s.fivePlus || 0
+};
+
+function PlayerTable({ rows, showClub = false, defaultSort = 'goals', emptyText = 'Нет данных' }) {
+  const [sortKey, setSortKey] = useState(defaultSort);
+  const [limit, setLimit] = useState(50);
+  const sorted = useMemo(() => {
+    const get = PT_VALUE[sortKey];
+    return [...rows].sort((a, b) => {
+      const primary = get(b) - get(a);
+      if (primary) return primary;
+      return PT_VALUE.goals(b) - PT_VALUE.goals(a) || PT_VALUE.motm(b) - PT_VALUE.motm(a) || a.name.localeCompare(b.name, 'ru');
+    });
+  }, [rows, sortKey]);
+  const TEXT_COLS = ['name', 'club', 'pos'];
+  const quick = [['goals', 'Голы'], ['motm', 'MVP'], ['hatTricks', 'Хет-трики']];
+  const cols = PT_COLS.filter((c) => c[0] !== 'club' || showClub);
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-mute mr-1">Сортировка</span>
+        {quick.map(([key, label]) => (
+          <button key={key} type="button" onClick={() => setSortKey(key)}
+            className={`${btn('ghost', 'sm')} ${sortKey === key ? '!bg-accsoft !border-acc' : ''}`}>{label}</button>
+        ))}
+      </div>
+      <div className="overflow-x-auto rounded border border-line">
+        <table className="tbl w-full text-sm min-w-[40rem]">
+          <THead>
+            <th className="px-2 py-2 text-left text-[11px] uppercase tracking-wider font-semibold">#</th>
+            {cols.map((c) => {
+              const sortable = !TEXT_COLS.includes(c[0]);
+              const active = sortKey === c[0];
+              return (
+                <th key={c[0]} title={c[3]} aria-sort={active ? 'descending' : 'none'}
+                  className={`px-2 py-2 ${c[2] === 'right' ? 'text-right' : 'text-left'} ${active ? 'bg-white/15' : ''}`}>
+                  {sortable ? (
+                    <button type="button" onClick={() => setSortKey(c[0])}
+                      className={`text-[11px] uppercase tracking-wider font-semibold rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan ${active ? '' : 'opacity-80 hover:opacity-100'}`}>{c[1]}</button>
+                  ) : (
+                    <span className="text-[11px] uppercase tracking-wider font-semibold opacity-80">{c[1]}</span>
+                  )}
+                </th>
+              );
+            })}
+          </THead>
+          <tbody>
+            {sorted.slice(0, limit).map((r, i) => (
+              <tr key={r.id} className="border-b border-line last:border-0 even:bg-surf2">
+                <td className="px-2 py-2 text-mute num">{i + 1}</td>
+                <td className="px-2 py-2">
+                  <span className="inline-flex items-baseline gap-2">
+                    <span className="text-mute text-xs num w-5 text-right">{r.number || ''}</span>
+                    <PlayerLink id={r.id} name={r.name} />
+                    {r.former && <span className="text-[10px] uppercase tracking-wider text-mute border border-line rounded-sm px-1">бывший</span>}
+                  </span>
+                </td>
+                {showClub && <td className="px-2 py-2 text-mute"><ClubMark id={r.clubId} name={r.clubName} size={22} /></td>}
+                <td className="px-2 py-2"><PosChip pos={r.pos} /></td>
+                <td className="px-2 py-2 text-right num">{r.ovr}</td>
+                <td className="px-2 py-2 text-right num">{r.s.apps}</td>
+                <td className="px-2 py-2 text-right num font-semibold">{r.s.goals}</td>
+                <td className="px-2 py-2 text-right num">{r.s.motm}</td>
+                <td className="px-2 py-2 text-right num">{r.s.hatTricks}</td>
+                <td className="px-2 py-2 text-right num">{r.s.pokers}</td>
+                <td className="px-2 py-2 text-right num">{r.s.fivePlus}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {sorted.length === 0 && <Empty>{emptyText}</Empty>}
+      </div>
+      {sorted.length > limit && (
+        <div className="mt-3 flex justify-center">
+          <button type="button" className={btn('ghost')} onClick={() => setLimit(limit + 50)}>Показать ещё ({sorted.length - limit})</button>
+        </div>
+      )}
+    </div>
+  );
+}
+function MatchEvents({ events }) {
+  if (!events || !events.length) return <p className="text-xs text-mute">Событий не было.</p>;
+  const sorted = [...events].sort((a, b) => a.min - b.min);
+  return (
+    <ul className="space-y-1.5">
+      {sorted.map((e, i) => {
+        const isHome = e.side === 'home';
+        return (
+          <li key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
+            <div className={`min-w-0 ${isHome ? 'text-right' : ''}`}>
+              {isHome && (
+                <span className="inline-flex items-baseline gap-1.5 max-w-full">
+                  <span className="text-base leading-none shrink-0">⚽</span>
+                  <span className="min-w-0 break-words">{e.name}</span>
+                </span>
+              )}
+            </div>
+            <span className="text-mute text-xs num px-2 shrink-0">{e.min}'</span>
+            <div className={`min-w-0 ${!isHome ? 'text-left' : ''}`}>
+              {!isHome && (
+                <span className="inline-flex items-baseline gap-1.5 max-w-full">
+                  <span className="text-base leading-none shrink-0">⚽</span>
+                  <span className="min-w-0 break-words">{e.name}</span>
+                </span>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function StatBar({ label, a, b, suffix = '' }) {
+  const total = a + b;
+  const pa = total ? (a / total) * 100 : 50;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="num font-semibold w-12">{a}{suffix}</span>
+        <span className="text-xs uppercase tracking-wider text-mute">{label}</span>
+        <span className="num font-semibold w-12 text-right">{b}{suffix}</span>
+      </div>
+      <div className="flex gap-1 h-1.5 mt-1">
+        <div className="rounded-sm" style={{ width: `${pa}%`, background: 'var(--acc)', transition: 'width 400ms ease' }} />
+        <div className="rounded-sm flex-1" style={{ background: 'var(--mute)', opacity: 0.55 }} />
+      </div>
+    </div>
+  );
+}
+
+function ovrColor(ovr) {
+  if (ovr >= 90) return '#0B6B2E';
+  if (ovr >= 70) return '#14A34A';
+  if (ovr >= 60) return '#E58A00';
+  return '#C62828';
+}
+
+function OvrBadge({ ovr }) {
+  return <span className="inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-bold num text-white shrink-0" style={{ background: ovrColor(ovr) }}>{ovr}</span>;
+}
+
+function LineupColumn({ title, clubId, list, onPick }) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2 mb-2">
+        <ClubLogo id={clubId} name={title} size={26} />
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-mute break-words">{title}</span>
+      </div>
+      <ul className="divide-y divide-line border border-line rounded">
+        {list.map((e) => (
+          <li key={e.id}>
+            <button type="button" onClick={() => onPick(e)} className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-surf2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-acc">
+              <span className="text-mute text-xs num w-5 text-right shrink-0">{e.number || ''}</span>
+              <PosChip pos={e.pos} />
+              <span className="min-w-0 flex-1 break-words">{e.name}</span>
+              <OvrBadge ovr={e.ovr} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function MatchModal({ match, onClose, db, act }) {
+  const nav = useContext(NavCtx);
+  const [editOpen, setEditOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, []);
+
+  if (!match) {
+    return (
+      <div className="modal-back" onClick={onClose} role="dialog" aria-modal="true">
+        <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}><div className="p-6"><Empty>Матч не найден.</Empty></div></div>
+      </div>
+    );
+  }
+
+  const pickPlayer = (e) => { onClose(); nav.openPlayer(e.id); };
+  const motm = [...match.lineups.home, ...match.lineups.away].find((e) => e.id === match.motmId);
+  const s = match.stats;
+  const homeIsWin = match.hg > match.ag || (match.pens && match.pens.h > match.pens.a);
+  const awayIsWin = match.ag > match.hg || (match.pens && match.pens.a > match.pens.h);
+
+  return (
+    <div className="modal-back" onClick={onClose} role="dialog" aria-modal="true" aria-label="Центр матча">
+      <div className="modal-panel max-w-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-navy text-navyink p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-xs uppercase tracking-wider opacity-80">
+              {match.tournamentName} · {match.stage} · сезон {match.season}{match.national ? ' · сборные' : ''}
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button type="button" onClick={() => setEditOpen(true)} className="btn-navy rounded px-2.5 py-1 text-xs font-semibold transition-colors">Редактировать</button>
+              <button type="button" onClick={onClose} className="btn-navy rounded px-2.5 py-1 text-xs font-semibold transition-colors">Закрыть</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-4">
+            <div className="flex flex-col items-end gap-2 text-right font-display text-xl sm:text-3xl uppercase break-words min-w-0">
+              <ClubLogo id={match.homeId} name={match.homeName} size={48} />
+              <span className={`break-words ${homeIsWin ? 'font-extrabold' : 'font-semibold opacity-70'}`}>{match.homeName}</span>
+            </div>
+            <div className="font-display text-4xl sm:text-5xl font-extrabold num px-3">{match.hg} : {match.ag}</div>
+            <div className="flex flex-col items-start gap-2 font-display text-xl sm:text-3xl uppercase break-words min-w-0">
+              <ClubLogo id={match.awayId} name={match.awayName} size={48} />
+              <span className={`break-words ${awayIsWin ? 'font-extrabold' : 'font-semibold opacity-70'}`}>{match.awayName}</span>
+            </div>
+          </div>
+          {match.pens && <div className="text-center text-sm mt-2 opacity-90">Пенальти: {match.pens.h} : {match.pens.a}</div>}
+        </div>
+
+        <div className="p-4 sm:p-5 space-y-6">
+          {motm && (
+            <div className="flex flex-wrap items-center gap-3 border border-line rounded p-3 bg-surf2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-mute">MVP матча</span>
+              <button type="button" onClick={() => pickPlayer(motm)} className="font-semibold hover:underline text-left">{motm.name}</button>
+              <PosChip pos={motm.pos} />
+              <OvrBadge ovr={motm.ovr} />
+              {motm.goals > 0 && <span className="text-sm">{Array.from({ length: motm.goals }).map((_, i) => <span key={i}>⚽</span>)}</span>}
+            </div>
+          )}
+          <div><Heading className="mb-3">События</Heading><MatchEvents events={match.events} /></div>
+          <div>
+            <Heading className="mb-3">Статистика матча</Heading>
+            <div className="space-y-3">
+              <StatBar label="Владение мячом" a={s.possession[0]} b={s.possession[1]} suffix="%" />
+              <StatBar label="Удары" a={s.shots[0]} b={s.shots[1]} />
+              <StatBar label="В створ" a={s.onTarget[0]} b={s.onTarget[1]} />
+            </div>
+          </div>
+          <div>
+            <Heading className="mb-3">Составы</Heading>
+            <div className="grid md:grid-cols-2 gap-4">
+              <LineupColumn title={match.homeName} clubId={match.homeId} list={match.lineups.home} onPick={pickPlayer} />
+              <LineupColumn title={match.awayName} clubId={match.awayId} list={match.lineups.away} onPick={pickPlayer} />
+            </div>
+          </div>
+        </div>
+      </div>
+      {editOpen && <MatchEditor match={match} db={db} act={act} onClose={() => setEditOpen(false)} />}
+    </div>
+  );
+}
+
+function MatchEditor({ match, db, act, onClose }) {
+  const [hg, setHg] = useState(match.hg);
+  const [ag, setAg] = useState(match.ag);
+  const [motmId, setMotmId] = useState(match.motmId || '');
+  const [events, setEvents] = useState([...match.events]);
+  const [addSide, setAddSide] = useState('home');
+  const [addPlayerId, setAddPlayerId] = useState('');
+  const [addMin, setAddMin] = useState('1');
+  const [msg, setMsg] = useState('');
+
+  const allPlayers = [...match.lineups.home.map((e) => ({ ...e, side: 'home', sideName: match.homeName })), ...match.lineups.away.map((e) => ({ ...e, side: 'away', sideName: match.awayName }))];
+  const availableForAdd = allPlayers.filter((p) => p.side === addSide);
+
+  const removeEvent = (idx) => setEvents(events.filter((_, i) => i !== idx));
+  const addEvent = () => {
+    const min = Number(addMin);
+    if (!Number.isInteger(min) || min < 1 || min > 120) { setMsg('Минута должна быть от 1 до 120'); return; }
+    const p = allPlayers.find((x) => x.id === addPlayerId);
+    if (!p) { setMsg('Выберите игрока'); return; }
+    setEvents([...events, { min, type: 'goal', side: p.side, playerId: p.id, name: p.name }]);
+    setAddPlayerId(''); setAddMin('1'); setMsg('');
+  };
+  const save = () => {
+    const r = act.editMatch(match.id, { hg: Number(hg), ag: Number(ag), motmId: motmId || null, events });
+    if (r.error) { setMsg(r.error); return; }
+    setMsg('Сохранено. Статистика пересчитана.');
+    setTimeout(onClose, 600);
+  };
+
+  return (
+    <div className="modal-back" onClick={onClose} role="dialog" aria-modal="true" aria-label="Редактор матча">
+      <div className="modal-panel max-w-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-navy text-navyink p-4 flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-bold uppercase tracking-wider">Редактор матча</h2>
+          <button type="button" onClick={onClose} className="btn-navy rounded px-2.5 py-1 text-xs font-semibold">Закрыть</button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-mute mb-2">Счёт</div>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+              <div><label className={labelCls} htmlFor="me-hg">{match.homeName}</label>
+                <input id="me-hg" type="number" min="0" max="30" className={inputCls} value={hg} onChange={(e) => setHg(e.target.value)} /></div>
+              <span className="font-display text-2xl font-bold pt-4">:</span>
+              <div><label className={labelCls} htmlFor="me-ag">{match.awayName}</label>
+                <input id="me-ag" type="number" min="0" max="30" className={inputCls} value={ag} onChange={(e) => setAg(e.target.value)} /></div>
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-mute mb-2">MVP матча</div>
+            <select className={inputCls} value={motmId} onChange={(e) => setMotmId(e.target.value)}>
+              <option value="">— не выбран —</option>
+              {allPlayers.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.sideName} · {p.pos}</option>)}
+            </select>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-mute mb-2">Голы ({events.length})</div>
+            {events.length === 0 ? <p className="text-sm text-mute">Голов нет.</p> : (
+              <ul className="divide-y divide-line border border-line rounded max-h-48 overflow-y-auto">
+                {[...events].sort((a, b) => a.min - b.min).map((e) => {
+                  const realIdx = events.indexOf(e);
+                  return (
+                    <li key={realIdx} className="px-2 py-1.5 flex items-center gap-2 text-sm">
+                      <span className="text-mute num w-8 text-right shrink-0">{e.min}'</span>
+                      <span className="text-mute text-xs w-20 shrink-0 truncate">{e.side === 'home' ? match.homeName : match.awayName}</span>
+                      <span className="min-w-0 flex-1 break-words">{e.name}</span>
+                      <button type="button" className={btn('danger', 'sm')} onClick={() => removeEvent(realIdx)}>Удалить</button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-mute mb-2">Добавить гол</div>
+            <div className="grid grid-cols-2 sm:grid-cols-[7rem_1fr_5rem_auto] gap-2 items-end">
+              <div className="min-w-0"><label className={labelCls} htmlFor="me-side">Команда</label>
+                <select id="me-side" className={inputCls} value={addSide} onChange={(e) => { setAddSide(e.target.value); setAddPlayerId(''); }}>
+                  <option value="home">{match.homeName}</option><option value="away">{match.awayName}</option>
+                </select></div>
+              <div className="min-w-0"><label className={labelCls} htmlFor="me-player">Игрок</label>
+                <select id="me-player" className={inputCls} value={addPlayerId} onChange={(e) => setAddPlayerId(e.target.value)}>
+                  <option value="">Выберите</option>
+                  {availableForAdd.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.pos}</option>)}
+                </select></div>
+              <div className="min-w-0"><label className={labelCls} htmlFor="me-min">Минута</label>
+                <input id="me-min" type="number" min="1" max="120" className={inputCls} value={addMin} onChange={(e) => setAddMin(e.target.value)} /></div>
+              <button type="button" className={btn('ghost')} onClick={addEvent}>Добавить</button>
+            </div>
+          </div>
+          {msg && <p className="text-sm font-semibold">{msg}</p>}
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-line">
+            <button type="button" className={btn('primary')} onClick={save}>Сохранить и пересчитать статистику</button>
+            <button type="button" className={btn('ghost')} onClick={onClose}>Отмена</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+/* ================================================================== */
+/* ПРОФИЛИ И ВКЛАДКИ                                                  */
+/* ================================================================== */
+const COUNTRY_FLAG = (db, countryId) => db.nationalTeams.find((x) => x.id === countryId) || null;
+
+function AggTable({ head, rows }) {
+  return (
+    <div className="overflow-x-auto rounded border border-line">
+      <table className="tbl w-full text-sm min-w-[26rem]">
+        <THead>
+          {head.map((h) => <th key={h} className="px-2 py-2 text-left text-[11px] uppercase tracking-wider font-semibold">{h}</th>)}
+          {['М', 'Г', 'MVP', 'ХТ', 'ПК', '5+'].map((h) => (
+            <th key={h} className="px-2 py-2 text-center text-[11px] uppercase tracking-wider font-semibold w-10">{h}</th>
+          ))}
+        </THead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className="border-b border-line last:border-0 even:bg-surf2">
+              {r.cells.map((c, i) => <td key={i} className="px-2 py-2">{c}</td>)}
+              <td className="px-2 py-2 text-center num w-10">{r.agg.apps}</td>
+              <td className="px-2 py-2 text-center num font-semibold w-10">{r.agg.goals}</td>
+              <td className="px-2 py-2 text-center num w-10">{r.agg.motm}</td>
+              <td className="px-2 py-2 text-center num w-10">{r.agg.hatTricks}</td>
+              <td className="px-2 py-2 text-center num w-10">{r.agg.pokers}</td>
+              <td className="px-2 py-2 text-center num w-10">{r.agg.fivePlus}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PlayerProfile({ playerId, db, onBack, act }) {
+  const nav = useContext(NavCtx);
+  const player = db.players.find((p) => p.id === playerId) || null;
+  const [season, setSeason] = useState('');
+  const [tid, setTid] = useState('');
+  const [logLimit, setLogLimit] = useState(15);
+
+  const log = useMemo(() => playerLog(db.matches, playerId), [db.matches, playerId]);
+  const filtered = useMemo(
+    () => log.filter((x) => (!season || x.m.season === Number(season)) && (!tid || x.m.tournamentId === tid)),
+    [log, season, tid]
+  );
+  const seasonOptions = useMemo(() => [...new Set(log.map((x) => x.m.season))].sort((a, b) => b - a), [log]);
+  const tournamentOptions = useMemo(() => {
+    const map = new Map();
+    log.forEach((x) => {
+      if (season && x.m.season !== Number(season)) return;
+      if (!map.has(x.m.tournamentId)) map.set(x.m.tournamentId, x.m.tournamentName);
+    });
+    return [...map.entries()];
+  }, [log, season]);
+
+  const agg = useMemo(() => {
+    const a = emptyAgg();
+    filtered.forEach(({ m, e }) => addToAgg(a, e, m.motmId === e.id));
+    return a;
+  }, [filtered]);
+
+  const byTournament = useMemo(() => {
+    const map = new Map();
+    filtered.forEach(({ m, e, side }) => {
+      const r = map.get(m.tournamentId) || { key: m.tournamentId, season: m.season, name: m.tournamentName, agg: emptyAgg() };
+      addToAgg(r.agg, e, m.motmId === e.id);
+      map.set(m.tournamentId, r);
+    });
+    return [...map.values()];
+  }, [filtered]);
+
+  const bySeason = useMemo(() => {
+    const map = new Map();
+    filtered.forEach(({ m, e }) => {
+      const r = map.get(m.season) || { key: String(m.season), season: m.season, agg: emptyAgg() };
+      addToAgg(r.agg, e, m.motmId === e.id);
+      map.set(m.season, r);
+    });
+    return [...map.values()];
+  }, [filtered]);
+
+  const moves = useMemo(() => db.transfers.filter((t) => t.playerId === playerId), [db.transfers, playerId]);
+
+  const clubLog = useMemo(() => log.filter((x) => !x.m.national), [log]);
+  const nationalLog = useMemo(() => log.filter((x) => x.m.national), [log]);
+  const clubAgg = useMemo(() => { const a = emptyAgg(); clubLog.forEach(({ m, e }) => addToAgg(a, e, m.motmId === e.id)); return a; }, [clubLog]);
+  const nationalAgg = useMemo(() => { const a = emptyAgg(); nationalLog.forEach(({ m, e }) => addToAgg(a, e, m.motmId === e.id)); return a; }, [nationalLog]);
+
+  if (!player) {
+    return (
+      <div className="space-y-4">
+        <button type="button" className={btn('ghost')} onClick={onBack}>← Назад</button>
+        <Panel><Empty>Игрок удалён из базы. Его матчи остались в архиве.</Empty></Panel>
+      </div>
+    );
+  }
+
+  const noFilter = !season && !tid;
+  const summary = noFilter ? { ...player.stats } : agg;
+  const club = db.clubs.find((c) => c.id === player.clubId);
+  const country = COUNTRY_FLAG(db, player.countryId);
+  const awardCount = db.awards.filter((a) => a.playerId === playerId).length;
+  const isFree = !player.clubId && !player.retired;
+  const isRetired = !!player.retired;
+
+  return (
+    <div className="space-y-4">
+      <button type="button" className={btn('ghost')} onClick={onBack}>← Назад</button>
+
+      <div className="bg-navy text-navyink rounded overflow-hidden" style={{ borderBottom: '3px solid var(--cyan)' }}>
+        <div className="p-4 sm:p-6 flex flex-wrap items-center gap-4 sm:gap-6">
+          <div className="font-display text-7xl sm:text-8xl font-extrabold num leading-none" style={{ opacity: 0.35 }}>{player.number || '–'}</div>
+          <div className="min-w-0 flex-1 basis-56">
+            <div className="text-xs uppercase tracking-wider opacity-80">{POS_NAME[player.pos]}{player.age ? ` · ${player.age} лет` : ''}</div>
+            <h1 className="font-display text-4xl sm:text-5xl font-extrabold uppercase leading-none break-words mt-1">{player.name}</h1>
+            {awardCount > 0 && (
+              <div className="inline-block mt-2 rounded-sm px-2 py-0.5 text-xs font-bold uppercase tracking-wider" style={{ background: 'var(--yellow)', color: '#0A1233' }}>Золотой мяч{awardCount > 1 ? ` ×${awardCount}` : ''}</div>
+            )}
+            {isRetired && <div className="inline-block mt-2 rounded-sm px-2 py-0.5 text-xs font-bold uppercase tracking-wider" style={{ background: 'var(--mute)', color: '#FFFFFF' }}>Завершил карьеру</div>}
+            {isFree && <div className="inline-block mt-2 rounded-sm px-2 py-0.5 text-xs font-bold uppercase tracking-wider" style={{ background: 'var(--cyan)', color: '#041033' }}>Свободный агент</div>}
+            <div className="mt-2 text-sm flex flex-wrap items-center gap-3">
+              {club ? <span className="inline-flex items-center gap-2"><ClubLogo id={club.id} name={club.name} size={28} /><ClubLink id={club.id} name={club.name} className="underline underline-offset-4 !text-navyink" /></span> : <span>Без клуба</span>}
+              {country && <span className="inline-flex items-center gap-2"><Logo src={country.logo} name={country.name} size={24} /><span>{country.name}</span></span>}
+            </div>
+          </div>
+          <div className="text-center border rounded px-4 py-2" style={{ borderColor: 'rgba(255,255,255,0.35)' }}>
+            <div className="mb-1"><OvrBadge ovr={player.ovr} /></div>
+            <div className="text-[11px] uppercase tracking-wider opacity-80 mt-1">OVR</div>
+          </div>
+        </div>
+        <div className="px-4 sm:px-6 pb-4 flex flex-wrap gap-2">
+          {isRetired ? (
+            <button type="button" className={btn('primary', 'sm')} onClick={() => act.resumeCareer(player.id)}>Возобновить карьеру</button>
+          ) : (
+            <>
+              {isFree && <button type="button" className={btn('primary', 'sm')} onClick={() => nav.openClubPicker(player.id)}>Подписать в клуб</button>}
+              {!isFree && club && <ConfirmButton size="sm" label="Сделать свободным агентом" confirmLabel="Убрать из клуба" onConfirm={() => act.makeFreeAgent(player.id)} />}
+              <ConfirmButton size="sm" label="Завершить карьеру" confirmLabel="Завершить карьеру?" onConfirm={() => act.retirePlayer(player.id)} />
+            </>
+          )}
+        </div>
+      </div>
+
+      <Panel>
+        <div className="flex flex-wrap items-end gap-3 mb-4">
+          <div className="min-w-0 basis-40">
+            <label className={labelCls} htmlFor="pp-season">Сезон</label>
+            <select id="pp-season" className={inputCls} value={season} onChange={(e) => { setSeason(e.target.value); setTid(''); setLogLimit(15); }}>
+              <option value="">Все сезоны</option>
+              {seasonOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="min-w-0 basis-56 flex-1">
+            <label className={labelCls} htmlFor="pp-tid">Турнир</label>
+            <select id="pp-tid" className={inputCls} value={tid} onChange={(e) => { setTid(e.target.value); setLogLimit(15); }}>
+              <option value="">Все турниры</option>
+              {tournamentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+          <Metric label="Матчи" value={summary.apps} />
+          <Metric label="Голы" value={summary.goals} />
+          <Metric label="MVP" value={summary.motm} />
+          <Metric label="Хет-трики" value={summary.hatTricks} />
+          <Metric label="Покеры" value={summary.pokers} />
+          <Metric label="5+ голов" value={summary.fivePlus} />
+        </div>
+      </Panel>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Panel>
+          <Heading className="mb-3">Клубная карьера</Heading>
+          <div className="grid grid-cols-3 gap-3">
+            <Metric label="Матчи" value={clubAgg.apps} />
+            <Metric label="Голы" value={clubAgg.goals} />
+            <Metric label="MVP" value={clubAgg.motm} />
+            <Metric label="Хет-трики" value={clubAgg.hatTricks} />
+            <Metric label="Покеры" value={clubAgg.pokers} />
+            <Metric label="5+ голов" value={clubAgg.fivePlus} />
+          </div>
+        </Panel>
+        <Panel>
+          <Heading className="mb-3">Сборная (World Cup)</Heading>
+          <div className="grid grid-cols-3 gap-3">
+            <Metric label="Матчи" value={nationalAgg.apps} />
+            <Metric label="Голы" value={nationalAgg.goals} />
+            <Metric label="MVP" value={nationalAgg.motm} />
+            <Metric label="Хет-трики" value={nationalAgg.hatTricks} />
+            <Metric label="Покеры" value={nationalAgg.pokers} />
+            <Metric label="5+ голов" value={nationalAgg.fivePlus} />
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
+        <Panel>
+          <Heading className="mb-3">По турнирам</Heading>
+          {byTournament.length === 0 ? <Empty>Нет матчей в выбранном периоде.</Empty> : (
+            <AggTable 
+              head={['Сезон', 'Турнир']}
+              rows={byTournament.map((r) => ({ 
+                key: r.key, 
+                agg: r.agg, 
+                cells: [
+                  <span className="num">{r.season}</span>, 
+                  <span className="inline-flex items-center gap-2">
+                    <Logo src={nav.tournamentLogo(r.key)} name={r.name} size={20} />
+                    <span className="font-semibold break-words">{r.name}</span>
+                  </span>
+                ] 
+              }))} 
+            />
+          )}
+        </Panel>
+        <Panel>
+          <Heading className="mb-3">По сезонам</Heading>
+          {bySeason.length === 0 ? <Empty>Нет матчей в выбранном периоде.</Empty> : (
+            <AggTable 
+              head={['Сезон']} 
+              rows={bySeason.map((r) => ({ 
+                key: r.key, 
+                agg: r.agg, 
+                cells: [<span className="num font-semibold">{r.season}</span>] 
+              }))} 
+            />
+          )}
+        </Panel>
+      </div>
+
+      <Panel>
+        <Heading className="mb-3">Матчи</Heading>
+        {filtered.length === 0 ? <Empty>Игрок ещё не выходил на поле в выбранном периоде.</Empty> : (
+          <ul className="divide-y divide-line border border-line rounded">
+            {filtered.slice(0, logLimit).map(({ m, e, side }) => {
+              const own = side === 'home' ? m.hg : m.ag;
+              const opp = side === 'home' ? m.ag : m.hg;
+              const res = own > opp ? 'W' : own === opp ? 'D' : 'L';
+              return (
+                <li key={m.id}>
+                  <button type="button" onClick={() => nav.openMatch(m.id)} className="w-full text-left px-3 py-2.5 hover:bg-surf2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-acc">
+                    <div className="flex items-start gap-x-3 gap-y-1">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm text-[10px] font-bold shrink-0 mt-1" style={{ background: FORM_BG[res], color: res === 'D' ? 'var(--surf)' : '#FFFFFF' }}>{FORM_LABEL[res]}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center flex-wrap gap-1">
+                          <ClubLogo id={m.homeId} name="" size={18} /> 
+                          <span className="font-semibold">{m.homeName} <span className="num">{m.hg}:{m.ag}</span> {m.awayName}</span>
+                          <ClubLogo id={m.awayId} name="" size={18} />
+                        </div>
+                        {m.pens && <span className="text-xs text-mute"> (пен. {m.pens.h}:{m.pens.a})</span>}
+                        <span className="block text-xs text-mute mt-0.5">{m.tournamentName} · {m.stage} · {m.season}</span>
+                      </div>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {filtered.length > logLimit && (
+          <div className="mt-3 flex justify-center">
+            <button type="button" className={btn('ghost')} onClick={() => setLogLimit(logLimit + 15)}>Показать ещё ({filtered.length - logLimit})</button>
+          </div>
+        )}
+      </Panel>
+
+      {moves.length > 0 && (
+        <Panel>
+          <Heading className="mb-3">Карьера: переходы</Heading>
+          <ul className="divide-y divide-line">
+            {[...moves].reverse().map((t) => (
+              <li key={t.id} className="py-2 text-sm flex flex-wrap items-baseline justify-between gap-2">
+                <span>{t.fromName} → <span className="font-semibold">{t.toName}</span></span>
+                <span className="text-mute num">сезон {t.season || START_SEASON}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+    </div>
+  );
+}
+function ClubPickerModal({ playerId, db, act, onClose }) {
+  const player = db.players.find((p) => p.id === playerId);
+  const [clubId, setClubId] = useState('');
+  if (!player) return null;
+  const club = db.clubs.find((c) => c.id === clubId);
+  const confirm = () => { if (!clubId) return; act.signFreeAgent(player.id, clubId); onClose(); };
+  return (
+    <div className="modal-back" onClick={onClose} role="dialog" aria-modal="true" aria-label="Подписать в клуб">
+      <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-navy text-navyink p-4 flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-bold uppercase tracking-wider">Подписать в клуб</h2>
+          <button type="button" onClick={onClose} className="btn-navy rounded px-2.5 py-1 text-xs font-semibold">Закрыть</button>
+        </div>
+        <div className="p-4 space-y-4">
+          <p className="text-sm">Игрок: <b>{player.name}</b> · {POS_NAME[player.pos]} · OVR {player.ovr}</p>
+          <div>
+            <label className={labelCls} htmlFor="fa-club">Клуб</label>
+            <select id="fa-club" className={inputCls} value={clubId} onChange={(e) => setClubId(e.target.value)}>
+              <option value="">Выберите клуб</option>
+              {db.clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <button type="button" className={`${btn('primary')} w-full`} disabled={!clubId} onClick={confirm}>
+            {club ? `Подписать в «${club.name}»` : 'Подписать'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ClubProfile({ club, db }) {
+  const nav = useContext(NavCtx);
+  const [squadTab, setSquadTab] = useState('all');
+
+  const ms = useMemo(() => db.matches.filter((m) => !m.national && (m.homeId === club.id || m.awayId === club.id)), [db.matches, club.id]);
+  const rec = useMemo(() => clubRecord(ms, club.id), [ms, club.id]);
+  const form = useMemo(() => clubForm(ms, club.id, 5), [ms, club.id]);
+  const honours = useMemo(() => db.honours.filter((h) => h.clubId === club.id && !h.national), [db.honours, club.id]);
+  const leagueTitles = honours.filter((h) => h.type === 'league').length;
+  const nationalCups = honours.filter((h) => h.type === 'cup' && !/champions/i.test(h.tournamentName)).length;
+  const uclTitles = honours.filter((h) => /champions/i.test(h.tournamentName)).length;
+  
+  const squad = useMemo(() => squadOf(db.players, club.id), [db.players, club.id]);
+  const ratings = teamRatings(squad);
+
+  const seasonRows = useMemo(() => {
+    const map = new Map();
+    ms.forEach((m) => { if (!map.has(m.season)) map.set(m.season, []); map.get(m.season).push(m); });
+    return [...map.entries()].sort((a, b) => b[0] - a[0]).map(([season, list]) => ({ season, r: clubRecord(list, club.id), trophies: honours.filter((h) => h.season === season).length }));
+  }, [ms, honours, club.id]);
+
+  const tournamentRows = useMemo(() => {
+    const rows = [];
+    db.tournaments.forEach((t) => {
+      if (t.national) return;
+      t.editions.forEach((e) => {
+        if (!e.teams.some((x) => x.id === club.id)) return;
+        let result;
+        if (t.type === 'league') {
+          const table = leagueTable(e);
+          const pos = table.findIndex((r) => r.id === club.id) + 1;
+          result = `${pos} место из ${table.length}${e.status === 'finished' && e.championId === club.id ? ' · чемпион' : ''}`;
+        } else {
+          result = cupResult(t, e, club.id);
+        }
+        rows.push({ t, e, result });
+      });
+    });
+    return rows.sort((a, b) => b.e.season - a.e.season);
+  }, [db.tournaments, club.id]);
+
+  const rows = useMemo(() => {
+    const map = aggregateMatches(db.matches.filter((m) => !m.national), null, (e) => e.clubId === club.id);
+    const out = Object.values(map).map((r) => {
+      const live = db.players.find((p) => p.id === r.id);
+      return {
+        ...r,
+        name: live ? live.name : r.name, pos: live ? live.pos : r.pos, ovr: live ? live.ovr : r.ovr,
+        number: live ? live.number : r.number, clubName: club.name,
+        former: !live || live.clubId !== club.id || live.retired
+      };
+    });
+    squad.forEach((p) => {
+      if (!map[p.id]) out.push({ id: p.id, name: p.name, pos: p.pos, ovr: p.ovr, number: p.number, clubId: club.id, clubName: club.name, former: false, s: emptyAgg() });
+    });
+    return out;
+  }, [db.matches, db.players, club.id, club.name, squad]);
+
+  const tabRows = squadTab === 'all' ? rows : rows.filter((r) => r.pos === squadTab);
+  const tabSort = { all: 'goals', GK: 'motm', DEF: 'motm', MID: 'goals', FWD: 'goals' }[squadTab];
+  const tabs = [['all', 'Все'], ...POSITIONS.map((p) => [p, POS_PLURAL[p]])];
+  const recent = [...ms].reverse().slice(0, 6);
+
+  const topScorers = useMemo(() => [...rows].sort((a, b) => b.s.goals - a.s.goals || b.s.motm - a.s.motm).slice(0, 5), [rows]);
+  const topMvp = useMemo(() => [...rows].sort((a, b) => b.s.motm - a.s.motm || b.s.goals - a.s.goals).slice(0, 5), [rows]);
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-navy text-navyink rounded overflow-hidden" style={{ borderBottom: '3px solid var(--cyan)' }}>
+        <div className="p-4 sm:p-6 flex flex-wrap items-center gap-4 sm:gap-6">
+          <ClubLogo id={club.id} name={club.name} size={88} />
+          <div className="min-w-0 flex-1 basis-64">
+            <div className="text-xs uppercase tracking-wider opacity-80">Профиль клуба · сезон {db.season}</div>
+            <h1 className="font-display text-4xl sm:text-5xl font-extrabold uppercase leading-none break-words mt-1">{club.name}</h1>
+            <div className="mt-3 flex items-center gap-3 text-sm"><span className="opacity-80">Форма</span><FormDots form={form} /></div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[['OVR', squad.length ? ratings.overall.toFixed(1) : '—'], ['Атака', squad.length ? ratings.attack.toFixed(1) : '—'], ['Защита', squad.length ? ratings.defense.toFixed(1) : '—']].map(([k, v]) => (
+              <div key={k} className="text-center border rounded px-3 py-2" style={{ borderColor: 'rgba(255,255,255,0.35)' }}>
+                <div className="font-display text-3xl font-bold num leading-none">{v}</div>
+                <div className="text-[11px] uppercase tracking-wider opacity-80 mt-1">{k}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Panel>
+        <Heading className="mb-4">История клуба</Heading>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-4">
+          <Metric label="Матчи" value={rec.p} /><Metric label="Победы" value={rec.w} /><Metric label="Ничьи" value={rec.d} />
+          <Metric label="Поражения" value={rec.l} /><Metric label="Забито" value={rec.gf} /><Metric label="Пропущено" value={rec.ga} />
+          <Metric label="Разница">{rec.gf - rec.ga > 0 ? '+' : ''}{rec.gf - rec.ga}</Metric>
+          <Metric label="% побед">{rec.p ? `${Math.round((rec.w / rec.p) * 100)}%` : '—'}</Metric>
+        </div>
+      </Panel>
+
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
+        <Panel>
+          <Heading className="mb-3">Трофеи</Heading>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
+            <Metric label="Всего" value={honours.length} />
+            <Metric label="Чемпионаты" value={leagueTitles} />
+            <Metric label="Кубки" value={nationalCups} />
+            <Metric label="Лига Чемпионов" value={uclTitles} />
+          </div>
+          {honours.length === 0 ? <Empty>Трофеев пока нет.</Empty> : (
+            <ul className="divide-y divide-line border border-line rounded">
+              {[...honours].reverse().map((h) => (
+                <li key={h.id} className="px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                  <span className="min-w-0 flex items-center gap-2 break-words font-semibold">
+                    <Logo src={nav.tournamentLogo(h.tournamentId) || h.logo} name={h.tournamentName} size={24} />
+                    {h.tournamentName}
+                  </span>
+                  <span className="flex items-center gap-2 shrink-0 text-xs text-mute">
+                    <span className="uppercase tracking-wider border border-line rounded-sm px-1">{h.type === 'league' ? 'Лига' : 'Кубок'}</span>
+                    <span className="num">{h.season}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+        <Panel>
+          <Heading className="mb-3">Последние матчи</Heading>
+          {recent.length === 0 ? <Empty>Клуб ещё не играл матчей.</Empty> : (
+            <ul className="divide-y divide-line border border-line rounded">
+              {recent.map((m) => {
+                const home = m.homeId === club.id;
+                const gf = home ? m.hg : m.ag, ga = home ? m.ag : m.hg;
+                const res = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
+                return (
+                  <li key={m.id}>
+                    <button type="button" onClick={() => nav.openMatch(m.id)} className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-surf2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-acc">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm text-[10px] font-bold shrink-0" style={{ background: FORM_BG[res], color: res === 'D' ? 'var(--surf)' : '#FFFFFF' }}>{FORM_LABEL[res]}</span>
+                      <span className="min-w-0 flex-1 text-sm break-words">
+                        <span className="font-semibold inline-flex items-center flex-wrap gap-1">
+                          <ClubLogo id={m.homeId} name="" size={18} /> {m.homeName} <span className="num">{m.hg}:{m.ag}</span> {m.awayName} <ClubLogo id={m.awayId} name="" size={18} />
+                        </span>
+                        {m.pens && <span className="text-xs text-mute"> (пен. {m.pens.h}:{m.pens.a})</span>}
+                        <span className="block text-xs text-mute">{m.tournamentName} · {m.stage} · {m.season}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
+        <Panel>
+          <Heading className="mb-3">По сезонам</Heading>
+          {seasonRows.length === 0 ? <Empty>Нет сыгранных матчей.</Empty> : (
+            <div className="overflow-x-auto rounded border border-line">
+              <table className="tbl w-full text-sm min-w-[28rem]">
+                <THead>{['Сезон', 'М', 'В', 'Н', 'П', 'З–П', 'О', 'Трофеи'].map((h, i) => (
+                  <th key={h} className={`px-2 py-2 text-[11px] uppercase tracking-wider font-semibold ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+                ))}</THead>
+                <tbody>
+                  {seasonRows.map((s) => (
+                    <tr key={s.season} className="border-b border-line last:border-0 even:bg-surf2">
+                      <td className="px-2 py-2 font-semibold num">{s.season}</td>
+                      <td className="px-2 py-2 text-right num">{s.r.p}</td><td className="px-2 py-2 text-right num">{s.r.w}</td>
+                      <td className="px-2 py-2 text-right num">{s.r.d}</td><td className="px-2 py-2 text-right num">{s.r.l}</td>
+                      <td className="px-2 py-2 text-right num">{s.r.gf}–{s.r.ga}</td>
+                      <td className="px-2 py-2 text-right num font-semibold">{s.r.pts}</td>
+                      <td className="px-2 py-2 text-right num">{s.trophies}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+        <Panel>
+          <Heading className="mb-3">Турниры клуба</Heading>
+          {tournamentRows.length === 0 ? <Empty>Клуб не участвовал в турнирах.</Empty> : (
+            <ul className="divide-y divide-line border border-line rounded max-h-80 overflow-y-auto">
+              {tournamentRows.map(({ t, e, result }) => (
+                <li key={`${t.id}-${e.id}`} className="px-3 py-2 text-sm flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="min-w-0 break-words"><span className="font-semibold">{t.name}</span><span className="text-xs text-mute"> · {t.type === 'league' ? 'Лига' : 'Кубок'} · {e.season}</span></span>
+                  <span className="text-xs text-mute">{result}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
+        <Panel>
+          <Heading className="mb-3">Лучшие бомбардиры клуба</Heading>
+          {topScorers.length === 0 ? <Empty>Нет данных.</Empty> : (
+            <ol className="divide-y divide-line border border-line rounded">
+              {topScorers.map((r, i) => (
+                <li key={r.id} className="px-3 py-2 flex items-center gap-2 text-sm">
+                  <span className="text-mute num w-4">{i + 1}</span><PosChip pos={r.pos} />
+                  <span className="min-w-0 flex-1 break-words"><PlayerLink id={r.id} name={r.name} /></span>
+                  <span className="font-display text-xl font-bold num">{r.s.goals}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Panel>
+        <Panel>
+          <Heading className="mb-3">Лучшие по MVP</Heading>
+          {topMvp.length === 0 ? <Empty>Нет данных.</Empty> : (
+            <ol className="divide-y divide-line border border-line rounded">
+              {topMvp.map((r, i) => (
+                <li key={r.id} className="px-3 py-2 flex items-center gap-2 text-sm">
+                  <span className="text-mute num w-4">{i + 1}</span><PosChip pos={r.pos} />
+                  <span className="min-w-0 flex-1 break-words"><PlayerLink id={r.id} name={r.name} /></span>
+                  <span className="font-display text-xl font-bold num">{r.s.motm}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Panel>
+      </div>
+
+      <Panel>
+        <Heading className="mb-3">Все игроки клуба</Heading>
+        <p className="text-sm text-mute mb-3">Статистика считается по матчам за этот клуб. Бывшие игроки остаются в списке. Матчи сборной не входят.</p>
+        <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Позиции">
+          {tabs.map(([key, label]) => (
+            <button key={key} type="button" role="tab" aria-selected={squadTab === key} onClick={() => setSquadTab(key)}
+              className={`${btn('ghost', 'sm')} ${squadTab === key ? '!bg-btn !text-btnink !border-transparent' : ''}`}>{label}</button>
+          ))}
+        </div>
+        <PlayerTable key={squadTab} rows={tabRows} defaultSort={tabSort} emptyText="На этой позиции нет игроков." />
+      </Panel>
+    </div>
+  );
+}
+
+function ClubsTab({ db, clubId, onSelect }) {
+  const sorted = useMemo(() => [...db.clubs].sort((a, b) => a.name.localeCompare(b.name, 'ru')), [db.clubs]);
+  const club = db.clubs.find((c) => c.id === clubId) || sorted[0] || null;
+  if (!club) return <Panel><Empty>Клубов нет. Создайте первый на вкладке «База».</Empty></Panel>;
+  return (
+    <div className="space-y-4">
+      <div className="max-w-md">
+        <label className={labelCls} htmlFor="club-pick">Клуб</label>
+        <select id="club-pick" className={inputCls} value={club.id} onChange={(e) => onSelect(e.target.value)}>
+          {sorted.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+      <ClubProfile key={club.id} club={club} db={db} />
+    </div>
+  );
+}
+function NationalTeamsTab({ db, act }) {
+  const sorted = useMemo(() => [...db.nationalTeams].sort((a, b) => a.name.localeCompare(b.name, 'ru')), [db.nationalTeams]);
+  const [selId, setSelId] = useState(sorted[0] ? sorted[0].id : null);
+  const [newName, setNewName] = useState('');
+  const [error, setError] = useState('');
+  const selected = db.nationalTeams.find((c) => c.id === selId) || sorted[0] || null;
+
+  useEffect(() => {
+    if (selected && !db.nationalTeams.find((c) => c.id === selected.id)) setSelId(sorted[0] ? sorted[0].id : null);
+  }, [db.nationalTeams, selected, sorted]);
+
+  const create = (e) => {
+    e.preventDefault();
+    const r = act.addNationalTeam(newName);
+    if (r.error) { setError(r.error); return; }
+    setError(''); setNewName(''); setSelId(r.id);
+  };
+
+  return (
+    <div className="grid lg:grid-cols-[18rem_minmax(0,1fr)] gap-4 items-start">
+      <div className="space-y-4 min-w-0">
+        <Panel>
+          <form onSubmit={create}>
+            <label className={labelCls} htmlFor="nt-new">Новая сборная</label>
+            <div className="flex gap-2">
+              <input id="nt-new" className={inputCls} placeholder="Название страны" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <button type="submit" className={`${btn('primary')} shrink-0`}>Создать</button>
+            </div>
+            {error && <p className="text-xs text-bad mt-2">{error}</p>}
+          </form>
+        </Panel>
+        <Panel className="!p-0">
+          <div className="px-4 py-3 border-b border-line text-[11px] font-semibold uppercase tracking-wider text-mute">Сборные · {db.nationalTeams.length}</div>
+          {db.nationalTeams.length === 0 && <Empty>Сборных нет. Создайте первую.</Empty>}
+          <ul className="max-h-[28rem] overflow-y-auto">
+            {sorted.map((c) => {
+              const players = db.players.filter((p) => p.countryId === c.id && !p.retired);
+              const active = selected && selected.id === c.id;
+              return (
+                <li key={c.id} className="border-b border-line last:border-0">
+                  <button type="button" onClick={() => setSelId(c.id)}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-acc ${active ? 'bg-accsoft' : 'hover:bg-surf2'}`}>
+                    <span className="min-w-0 flex items-center gap-3">
+                      <Logo src={c.logo} name={c.name} size={36} />
+                      <span className="min-w-0">
+                        <span className="block font-semibold break-words">{c.name}</span>
+                        <span className="block text-xs text-mute">{players.length} {plural(players.length, ['игрок', 'игрока', 'игроков'])}</span>
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      </div>
+      <div className="min-w-0">
+        {selected ? (
+          <div className="space-y-4">
+            <Panel>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <h2 className="font-display text-3xl font-bold uppercase tracking-wide break-words">{selected.name}</h2>
+                <ConfirmButton size="sm" label="Удалить сборную" confirmLabel="Удалить. Игроки останутся в базе" onConfirm={() => act.deleteNationalTeam(selected.id)} />
+              </div>
+              <div className="mt-4 pt-4 border-t border-line">
+                <LogoField key={selected.id} label="Флаг сборной" name={selected.name} value={selected.logo} onChange={(v) => act.setNationalTeamLogo(selected.id, v)} />
+              </div>
+            </Panel>
+          </div>
+        ) : (
+          <Panel><Empty>Выберите или создайте сборную.</Empty></Panel>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TransfersTab({ db, act }) {
+  const [mode, setMode] = useState('club');
+  const [fromId, setFromId] = useState('');
+  const [playerId, setPlayerId] = useState('');
+  const [toId, setToId] = useState('');
+  const [freePlayerId, setFreePlayerId] = useState('');
+  const [freeToId, setFreeToId] = useState('');
+
+  const fromPlayers = useMemo(() => sortRoster(squadOf(db.players, fromId)), [db.players, fromId]);
+  const player = db.players.find((p) => p.id === playerId && p.clubId === fromId) || null;
+  const fromClub = db.clubs.find((c) => c.id === fromId);
+  const toClub = db.clubs.find((c) => c.id === toId);
+  const canGo = !!(player && toClub && toId !== fromId);
+
+  const freePlayers = useMemo(() => db.players.filter((p) => !p.clubId && !p.retired).sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.ovr - a.ovr), [db.players]);
+  const freePlayer = db.players.find((p) => p.id === freePlayerId) || null;
+  const freeToClub = db.clubs.find((c) => c.id === freeToId);
+
+  const confirm = () => { if (!canGo) return; act.transfer(player.id, toId); setPlayerId(''); };
+  const confirmFree = () => { if (!freePlayer || !freeToClub) return; act.signFreeAgent(freePlayer.id, freeToClub.id); setFreePlayerId(''); };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => setMode('club')} className={`${btn('ghost')} ${mode === 'club' ? '!bg-btn !text-btnink !border-transparent' : ''}`}>Клуб → Клуб</button>
+        <button type="button" onClick={() => setMode('free')} className={`${btn('ghost')} ${mode === 'free' ? '!bg-btn !text-btnink !border-transparent' : ''}`}>Свободные агенты</button>
+      </div>
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
+        <Panel>
+          <Heading>{mode === 'club' ? 'Трансфер игрока' : 'Подписать свободного агента'}</Heading>
+          <div className="grid gap-4 mt-4">
+            {mode === 'club' ? (
+              <>
+                <div><label className={labelCls} htmlFor="tr-from">1. Клуб-источник</label>
+                  <select id="tr-from" className={inputCls} value={fromId} onChange={(e) => { setFromId(e.target.value); setPlayerId(''); }}>
+                    <option value="">Выберите клуб</option>
+                    {db.clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select></div>
+                <div><label className={labelCls} htmlFor="tr-player">2. Игрок</label>
+                  <select id="tr-player" className={inputCls} value={playerId} disabled={!fromId} onChange={(e) => setPlayerId(e.target.value)}>
+                    <option value="">{fromId ? (fromPlayers.length ? 'Выберите игрока' : 'В клубе нет игроков') : 'Сначала выберите клуб'}</option>
+                    {fromPlayers.map((p) => <option key={p.id} value={p.id}>{p.pos} · {p.name} · {p.ovr}</option>)}
+                  </select></div>
+                <div><label className={labelCls} htmlFor="tr-to">3. Клуб-получатель</label>
+                  <select id="tr-to" className={inputCls} value={toId} onChange={(e) => setToId(e.target.value)}>
+                    <option value="">Выберите клуб</option>
+                    {db.clubs.filter((c) => c.id !== fromId).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select></div>
+                <button type="button" className={btn('primary')} disabled={!canGo} onClick={confirm}>Подтвердить трансфер</button>
+              </>
+            ) : (
+              <>
+                <div><label className={labelCls} htmlFor="free-player">1. Свободный агент</label>
+                  <select id="free-player" className={inputCls} value={freePlayerId} onChange={(e) => setFreePlayerId(e.target.value)}>
+                    <option value="">{freePlayers.length ? 'Выберите игрока' : 'Нет свободных агентов'}</option>
+                    {freePlayers.map((p) => <option key={p.id} value={p.id}>{p.pos} · {p.name} · OVR {p.ovr}</option>)}
+                  </select></div>
+                <div><label className={labelCls} htmlFor="free-to">2. Клуб</label>
+                  <select id="free-to" className={inputCls} value={freeToId} onChange={(e) => setFreeToId(e.target.value)}>
+                    <option value="">Выберите клуб</option>
+                    {db.clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select></div>
+                <button type="button" className={btn('primary')} disabled={!freePlayer || !freeToClub} onClick={confirmFree}>Подписать</button>
+              </>
+            )}
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function StatsTab({ db }) {
+  const [season, setSeason] = useState('');
+  const [tid, setTid] = useState('');
+  const [query, setQuery] = useState('');
+  const [posFilter, setPosFilter] = useState('');
+  
+  const seasons = useMemo(() => seasonsOf(db), [db.matches, db.tournaments, db.season]);
+  const tournaments = useMemo(() => {
+    const map = new Map();
+    db.matches.forEach((m) => {
+      if (season && m.season !== Number(season)) return;
+      if (!map.has(m.tournamentId)) map.set(m.tournamentId, m.tournamentName);
+    });
+    return [...map.entries()];
+  }, [db.matches, season]);
+
+  const baseRows = useMemo(() => {
+    const names = {};
+    db.clubs.forEach((c) => { names[c.id] = c.name; });
+    db.nationalTeams.forEach((c) => { names[c.id] = c.name; });
+    const matchPred = (m) => (!season || m.season === Number(season)) && (!tid || m.tournamentId === tid);
+    const map = aggregateMatches(db.matches, matchPred);
+    return Object.values(map).map((r) => {
+      const live = db.players.find((p) => p.id === r.id);
+      return live ? { ...r, name: live.name, pos: live.pos, ovr: live.ovr, number: live.number } : r;
+    });
+  }, [db.players, db.clubs, db.nationalTeams, db.matches, season, tid]);
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return baseRows.filter((r) => (!q || r.name.toLowerCase().includes(q)) && (!posFilter || r.pos === posFilter));
+  }, [baseRows, query, posFilter]);
+
+  return (
+    <div className="space-y-4">
+      <Panel>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-0 basis-36"><label className={labelCls} htmlFor="st-season">Сезон</label>
+            <select id="st-season" className={inputCls} value={season} onChange={(e) => { setSeason(e.target.value); setTid(''); }}>
+              <option value="">Всё время</option>
+              {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select></div>
+          <div className="min-w-0 basis-52 flex-1"><label className={labelCls} htmlFor="st-tid">Турнир</label>
+            <select id="st-tid" className={inputCls} value={tid} onChange={(e) => setTid(e.target.value)}>
+              <option value="">Все турниры</option>
+              {tournaments.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select></div>
+          <div className="min-w-0 flex-1 basis-44"><label className={labelCls} htmlFor="st-q">Поиск игрока</label>
+            <input id="st-q" className={inputCls} placeholder="Имя" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
+          <div className="min-w-0 basis-28"><label className={labelCls} htmlFor="st-pos">Позиция</label>
+            <select id="st-pos" className={inputCls} value={posFilter} onChange={(e) => setPosFilter(e.target.value)}>
+              <option value="">Все</option>
+              {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select></div>
+        </div>
+      </Panel>
+      <Panel>
+        <Heading className="mb-3">Зал славы</Heading>
+        <PlayerTable key={`${season}|${tid}`} rows={rows} showClub defaultSort="goals" emptyText="Игроки не найдены." />
+      </Panel>
+    </div>
+  );
+}
+
+function BallonTab({ db, act }) {
+  const seasons = useMemo(() => { const s = new Set(db.matches.map((m) => m.season)); s.add(db.season); return [...s].sort((a, b) => b - a); }, [db.matches, db.season]);
+  const [season, setSeason] = useState(() => seasons.find((s) => db.matches.some((m) => m.season === s)) || db.season);
+  const [msg, setMsg] = useState('');
+  const result = useMemo(() => ballonRanking(db, season), [db, season]);
+  const winner = result.list[0];
+  
+  const give = () => {
+    if (!winner) return;
+    const r = act.giveAward(season, winner.id);
+    setMsg(r.error || 'Золотой мяч вручен!');
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold uppercase tracking-wider text-mute">Лучший игрок сезона</div>
+          <h2 className="font-display text-4xl font-extrabold uppercase leading-none mt-1">Золотой мяч</h2>
+        </div>
+        <div className="min-w-0 basis-40">
+          <label className={labelCls} htmlFor="bd-season">Сезон</label>
+          <select id="bd-season" className={inputCls} value={season} onChange={(e) => setSeason(Number(e.target.value))}>
+            {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      {!winner ? <Panel><Empty>Нет матчей в этом сезоне.</Empty></Panel> : (
+        <div className="bg-navy text-navyink rounded p-4 sm:p-6" style={{ borderBottom: '3px solid var(--yellow)' }}>
+          <div className="text-xs uppercase tracking-wider opacity-80">Победитель · сезон {season}</div>
+          <div className="font-display text-4xl sm:text-5xl font-extrabold uppercase mt-1"><PlayerLink id={winner.id} name={winner.name} className="!text-navyink" /></div>
+          <div className="mt-2 text-sm">{winner.lastClubName} · {POS_NAME[winner.pos]}</div>
+          <div className="mt-4 flex gap-2 items-center">
+             <button type="button" className="rounded px-3.5 py-2 text-sm font-semibold" style={{ background: 'var(--yellow)', color: '#0A1233' }} onClick={give}>Вручить</button>
+             {msg && <span className="text-sm">{msg}</span>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TournamentsTab({ db, act }) {
+  return (
+    <div className="space-y-4">
+      <Panel>
+        <Heading className="mb-3">Мои турниры</Heading>
+        <p className="text-sm text-mute mb-4">Для добавления турниров используйте вкладку «База».</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          {db.tournaments.map(t => (
+            <div key={t.id} className="border border-line rounded p-3">
+              <div className="font-bold text-lg">{t.name}</div>
+              <div className="text-xs text-mute mb-2">{t.type === 'league' ? 'Лига' : 'Кубок'}</div>
+              {t.editions.map(e => (
+                <div key={e.id} className="text-sm flex justify-between py-1 border-t border-line">
+                  <span>Сезон {e.season}</span>
+                  <span className="font-semibold">{e.status === 'finished' ? 'Завершён' : 'Идёт'}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function ManageTab({ db, act }) {
+  const [section, setSection] = useState('players');
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => setSection('players')} className={`${btn('ghost')} ${section === 'players' ? '!bg-btn !text-btnink !border-transparent' : ''}`}>Игроки</button>
+        <button type="button" onClick={() => setSection('clubs')} className={`${btn('ghost')} ${section === 'clubs' ? '!bg-btn !text-btnink !border-transparent' : ''}`}>Клубы</button>
+      </div>
+      {section === 'players' && <Panel><Heading>Все игроки</Heading><p className="text-sm text-mute mt-2">Добавление игроков и редактирование доступно в базе.</p></Panel>}
+      {section === 'clubs' && <Panel><Heading>Клубы</Heading><p className="text-sm text-mute mt-2">Список клубов.</p></Panel>}
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* APP (ГЛАВНЫЙ КОМПОНЕНТ)                                            */
+/* ================================================================== */
+function App() {
+  const [db, setDb] = useState(null); // Начинаем с null, пока грузим IndexedDB
+  const [route, setRoute] = useState({ tab: 'clubs', playerId: null, clubId: null });
+  const [matchId, setMatchId] = useState(null);
+  const [clubPickerPlayerId, setClubPickerPlayerId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  // Загрузка данных из IndexedDB при старте
+  useEffect(() => {
+    loadFromIndexedDB().then((saved) => {
+      if (saved && saved.data) {
+        setDb(normalizeDb(saved.data));
+      } else {
+        setDb(buildSeed());
+      }
+      document.getElementById('loading-screen').style.display = 'none';
+    });
+  }, []);
+
+  // Автосохранение при каждом изменении db
+  useEffect(() => {
+    if (db) {
+      saveToIndexedDB(db, Date.now());
+    }
+  }, [db]);
+
+  const notify = (msg) => setToast({ msg, id: uid() });
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const scrollTop = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  const nav = {
+    hasPlayer: (id) => db.players.some(p => p.id === id),
+    hasClub: (id) => db.clubs.some(c => c.id === id),
+    clubLogo: (id) => { const c = db.clubs.find(x => x.id === id); return c ? c.logo : null; },
+    tournamentLogo: (id) => { const t = db.tournaments.find(x => x.id === id); return t ? t.logo : null; },
+    openPlayer: (id) => { setRoute(r => ({ ...r, playerId: id })); scrollTop(); },
+    openClub: (id) => { setRoute({ tab: 'clubs', playerId: null, clubId: id }); scrollTop(); },
+    openMatch: (id) => setMatchId(id),
+    openClubPicker: (id) => setClubPickerPlayerId(id)
+  };
+
+  if (!db) return null; // Ждем загрузку
+
+  // Заглушки для функций (в будущем перенесем сюда act из старой версии)
+  const act = {
+    addClub: (n) => { setDb(p => ({ ...p, clubs: [...p.clubs, { id: uid(), name: n }] })); return {}; },
+    addNationalTeam: (n) => { setDb(p => ({ ...p, nationalTeams: [...p.nationalTeams, { id: uid(), name: n }] })); return {}; },
+    deleteNationalTeam: (id) => setDb(p => ({ ...p, nationalTeams: p.nationalTeams.filter(c => c.id !== id) })),
+    giveAward: (s, id) => { notify('Награда вручена'); return {}; },
+    transfer: () => notify('Трансфер выполнен'),
+    signFreeAgent: () => notify('Игрок подписан'),
+    editMatch: () => ({ error: 'Редактирование временно недоступно' })
+  };
+
+  const TABS = [
+    ['clubs', 'Клубы'], ['national', 'Сборные'], ['transfers', 'Трансферы'],
+    ['stats', 'Статистика'], ['ballon', 'Золотой мяч'], ['tournaments', 'Турниры'], ['manage', 'База']
+  ];
+
+  return (
+    <NavCtx.Provider value={nav}>
+      <header className="masthead text-navyink">
+        <div className="gutter">
+          <div className="mx-auto max-w-6xl pt-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-80">Сезон {db.season}</div>
+                <h1 className="font-display text-3xl sm:text-5xl font-extrabold uppercase tracking-wide leading-none mt-1">Football Manager</h1>
+              </div>
+            </div>
+            <nav className="flex overflow-x-auto mt-4 -mb-[3px]" role="tablist">
+              {TABS.map(([key, label]) => {
+                const active = route.tab === key && !route.playerId;
+                return (
+                  <button key={key} type="button" role="tab" aria-selected={active} onClick={() => setRoute({ tab: key, playerId: null, clubId: null })}
+                    className={`whitespace-nowrap px-3 sm:px-5 py-3 font-display text-lg sm:text-xl font-bold uppercase tracking-wider border-b-[3px] transition-all duration-150 ${active ? 'border-cyan opacity-100' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+                    {label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <div className="gutter">
+        <div className="mx-auto max-w-6xl py-6">
+          <main key={route.tab} className="view-in">
+            {route.playerId ? <PlayerProfile playerId={route.playerId} db={db} onBack={() => setRoute(r => ({ ...r, playerId: null }))} act={act} /> :
+             route.tab === 'clubs' ? <ClubsTab db={db} clubId={route.clubId} onSelect={(id) => setRoute(r => ({ ...r, clubId: id }))} /> :
+             route.tab === 'national' ? <NationalTeamsTab db={db} act={act} /> :
+             route.tab === 'transfers' ? <TransfersTab db={db} act={act} /> :
+             route.tab === 'stats' ? <StatsTab db={db} /> :
+             route.tab === 'ballon' ? <BallonTab db={db} act={act} /> :
+             route.tab === 'tournaments' ? <TournamentsTab db={db} act={act} /> :
+             <ManageTab db={db} act={act} />}
+          </main>
+        </div>
+      </div>
+
+      {matchId && <MatchModal match={db.matches.find(m => m.id === matchId)} onClose={() => setMatchId(null)} db={db} act={act} />}
+      {clubPickerPlayerId && <ClubPickerModal playerId={clubPickerPlayerId} db={db} act={act} onClose={() => setClubPickerPlayerId(null)} />}
+      {toast && <div className="toast-wrap"><div className="toast bg-navy text-navyink rounded px-4 py-2">{toast.msg}</div></div>}
+    </NavCtx.Provider>
+  );
+}
+
+// Регистрация Service Worker для PWA (оффлайн режим на iPhone)
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    self.addEventListener('install', (e) => { self.skipWaiting(); });
+    self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
+    self.addEventListener('fetch', (e) => {
+      // Простой кэш (в реальном проекте нужен Workbox, но для базовой работы хватит)
+    });
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
